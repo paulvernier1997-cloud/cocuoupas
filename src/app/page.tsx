@@ -1,548 +1,808 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, User, ShieldCheck, ChevronRight, Star, Zap, Lock, CreditCard, TrendingUp, AlertTriangle, EyeOff, Database, Smartphone, HelpCircle, CheckCircle2, MapPin, Clock, Image as ImageIcon, Loader2, FileWarning, Fingerprint, Globe, SearchCode, HeartCrack, BellOff, MessageSquareLock, Terminal, Radar, Unlock, ShieldAlert, ChevronDown, Cpu, Network, Binary, Calendar, AtSign, UploadCloud, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from "react";
 
-const CITIES = [
-  "Paris (75)", "Marseille (13)", "Lyon (69)", "Toulouse (31)", "Nice (06)", "Nantes (44)",
-  "Montpellier (34)", "Strasbourg (67)", "Bordeaux (33)", "Lille (59)", "Rennes (35)",
-  "Reims (51)", "Toulon (83)", "Saint-Étienne (42)", "Le Havre (76)", "Grenoble (38)"
+/* ══════════════ TYPES ══════════════ */
+type Screen = "HOME" | "SCAN" | "RESULT";
+type Tab = "APP" | "FACE";
+type AppStatus = "wait" | "scan" | "found" | "clean";
+type ScanPhase = "INIT" | "CONNECT" | "TINDER" | "BUMBLE" | "HINGE" | "COMPILE" | "DONE";
+type LogType = "info" | "success" | "warning" | "critical" | "clean" | "section";
+
+interface AppData {
+  name: string;
+  color: string;
+  icon: string;
+  db: string;
+}
+
+interface ScanLog {
+  time: string;
+  text: string;
+  type: LogType;
+}
+
+interface ToastData {
+  app: AppData;
+  city: string;
+  ago: number;
+}
+
+interface FakeProfile {
+  city: string;
+  hrs: number;
+  km: number;
+  age: number;
+  photos: number;
+  bio: string;
+  interests: string[];
+}
+
+interface IconProps {
+  d: string | string[];
+  s?: number;
+  c?: string;
+  f?: string;
+  [key: string]: unknown;
+}
+
+type IconFn = (props?: Partial<IconProps>) => React.ReactElement;
+
+/* ══════════════ DATA ══════════════ */
+const CITIES: string[] = ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Montpellier", "Strasbourg", "Bordeaux", "Lille", "Rennes", "Grenoble"];
+const APPS: AppData[] = [
+  { name: "Tinder", color: "#ff6b6b", icon: "🔥", db: "2.4M" },
+  { name: "Bumble", color: "#ffc53d", icon: "🐝", db: "1.8M" },
+  { name: "Hinge", color: "#7c5cfc", icon: "💜", db: "920K" },
 ];
-const APPS = ["Tinder", "Hinge", "Bumble"];
-const ACTIONS = ["découvert à", "repéré à", "démasqué à", "identifié à"];
+const NAMES: string[] = ["Lucas M.", "Hugo D.", "Emma L.", "Léa R.", "Thomas B.", "Camille P.", "Nathan G.", "Sophie K.", "Julie T.", "Antoine V.", "Marine C.", "Maxime S."];
+const ACTIONS: string[] = ["profil détecté à", "compte localisé à", "activité identifiée à", "profil repéré à"];
 
-const HACK_LOGS = [
-  "Connexion sécurisée au réseau Tor (Relais : Francfort)...",
-  "Attribution d'une adresse IP fantôme dynamique... OK",
-  "Contournement des pares-feux Cloudflare (Tinder/Bumble)...",
-  "Injection du script Shadow-API v4.2 en mémoire...",
-  "Accès aux bases de données en lecture seule... RÉUSSI",
-  "Analyse croisée des métadonnées (RS & Date de naissance)...",
-  "Recherche du profil cible en cours de traitement...",
-  "Extraction des coordonnées GPS (Dernière connexion)...",
-  "Algorithme FaceTrace : Mapping des traits du visage...",
-  "Correspondance visuelle trouvée à 68%... Affinage...",
-  "⚠️ CORRESPONDANCE CONFIRMÉE À 94.2% SUR UN PROFIL RÉCENT.",
-  "Téléchargement des photos de profil (Source CDN)...",
-  "Déchiffrement de la bio et des centres d'intérêts...",
-  "Vérification des correspondances Bumble/Hinge actives...",
-  "Compilation des preuves numériques en cours...",
-  "Chiffrement final du rapport PDF (Standard AES-256)...",
-  "Purge sécurisée des traces. Déconnexion réussie."
-];
+/* ── SVG Icon helper ── */
+const I: React.FC<IconProps> = ({ d, s = 20, c = "currentColor", f = "none", ...p }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill={f} stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...(p as React.SVGProps<SVGSVGElement>)}>
+    {(Array.isArray(d) ? d : [d]).map((x, i) => <path key={i} d={x} />)}
+  </svg>
+);
 
+const IC: Record<string, IconFn> = {
+  search: (p) => <I {...p} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />,
+  camera: (p) => <I {...p} d={["M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z", "M12 17a4 4 0 100-8 4 4 0 000 8z"]} />,
+  shield: (p) => <I {...p} d={["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", "M9 12l2 2 4-4"]} />,
+  lock: (p) => <I {...p} d={["M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z", "M7 11V7a5 5 0 0110 0v4"]} />,
+  alert: (p) => <I {...p} d={["M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z", "M12 9v4", "M12 17h.01"]} />,
+  clock: (p) => <I {...p} d={["M12 22a10 10 0 100-20 10 10 0 000 20z", "M12 6v6l4 2"]} />,
+  phone: (p) => <I {...p} d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />,
+  bellOff: (p) => <I {...p} d={["M13.73 21a2 2 0 01-3.46 0", "M18.63 13A17.89 17.89 0 0118 8", "M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h14", "M18 8a6 6 0 00-9.33-5", "M1 1l22 22"]} />,
+  msgLock: (p) => <I {...p} d={["M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"]} />,
+  chevDown: (p) => <I {...p} d="M6 9l6 6 6-6" />,
+  chevRight: (p) => <I {...p} d="M9 18l6-6-6-6" />,
+  upload: (p) => <I {...p} d={["M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4", "M17 8l-5-5-5 5", "M12 3v12"]} />,
+  x: (p) => <I {...p} d={["M18 6L6 18", "M6 6l12 12"]} />,
+  user: (p) => <I {...p} d={["M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2", "M12 11a4 4 0 100-8 4 4 0 000 8z"]} />,
+  calendar: (p) => <I {...p} d={["M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z", "M16 2v4", "M8 2v4", "M3 10h18"]} />,
+  at: (p) => <I {...p} d={["M12 16a4 4 0 100-8 4 4 0 000 8z", "M16 12v1a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"]} />,
+  terminal: (p) => <I {...p} d={["M4 17l6-6-6-6", "M12 19h8"]} />,
+  heartCrack: (p) => <I {...p} d={["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z", "M12 5L9.04 7.96a2.17 2.17 0 000 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 013.79 0l2.06 1.9"]} />,
+  image: (p) => <I {...p} d={["M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z", "M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z", "M21 15l-5-5L5 21"]} />,
+  mapPin: (p) => <I {...p} d={["M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z", "M12 13a3 3 0 100-6 3 3 0 000 6z"]} />,
+  fileText: (p) => <I {...p} d={["M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z", "M14 2v6h6", "M16 13H8", "M16 17H8", "M10 9H8"]} />,
+  check: (p) => <I {...p} d="M20 6L9 17l-5-5" />,
+  checkCircle: (p) => <I {...p} d={["M22 11.08V12a10 10 0 11-5.93-9.14", "M22 4L12 14.01l-3-3"]} />,
+  xCircle: (p) => <I {...p} d={["M12 22a10 10 0 100-20 10 10 0 000 20z", "M15 9l-6 6", "M9 9l6 6"]} />,
+  help: (p) => <I {...p} d={["M12 22a10 10 0 100-20 10 10 0 000 20z", "M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3", "M12 17h.01"]} />,
+  zap: (p) => <I {...p} d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" f="currentColor" />,
+  download: (p) => <I {...p} d={["M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"]} />,
+  arrowRight: (p) => <I {...p} d={["M5 12h14", "M12 5l7 7-7 7"]} />,
+  globe: (p) => <I {...p} d={["M12 22a10 10 0 100-20 10 10 0 000 20z", "M2 12h20", "M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"]} />,
+  activity: (p) => <I {...p} d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+  eye: (p) => <I {...p} d={["M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z", "M12 15a3 3 0 100-6 3 3 0 000 6z"]} />,
+};
+
+/* ── Animated counter ── */
+function AnimNum({ target, dur = 2200, suffix = "" }: { target: number; dur?: number; suffix?: string }) {
+  const [v, setV] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const ran = useRef(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !ran.current) {
+        ran.current = true;
+        const t0 = performance.now();
+        const tick = (now: number) => {
+          const p = Math.min((now - t0) / dur, 1);
+          setV(Math.floor((1 - Math.pow(1 - p, 3)) * target));
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.2 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [target, dur]);
+  return <span ref={ref}>{v.toLocaleString("fr-FR")}{suffix}</span>;
+}
+
+/* ── Dots animation ── */
+const Dots: React.FC = () => (
+  <span className="dots"><span>.</span><span>.</span><span>.</span></span>
+);
+
+/* ══════════════════════════════════════════════════════════ */
 export default function CocuOuPas() {
-  const [activeTab, setActiveTab] = useState('DATING_APP');
-  const [liveScans, setLiveScans] = useState(42);
-  const [recentFind, setRecentFind] = useState("Profil Tinder caché découvert à Paris");
+  const [tab, setTab] = useState<Tab>("APP");
+  const [input, setInput] = useState({ name: "", username: "", dob: "" });
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [screen, setScreen] = useState<Screen>("HOME");
+  const [liveCount, setLiveCount] = useState(47);
+  const [ticker, setTicker] = useState("");
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const [faq, setFaq] = useState<number | null>(null);
 
-  const [targetInput, setTargetInput] = useState({ name: "", username: "", dob: "" });
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  // Scan state
+  const [scanLogs, setScanLogs] = useState<ScanLog[]>([]);
+  const [scanPhase, setScanPhase] = useState<ScanPhase>("INIT");
+  const [appStatus, setAppStatus] = useState<AppStatus[]>(["wait", "wait", "wait"]);
+  const [scanPct, setScanPct] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const termRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTime = useRef<number>(0);
 
-  const [scanState, setScanState] = useState<'IDLE' | 'SCANNING' | 'LOCKED'>('IDLE');
-  const [scanProgress, setScanProgress] = useState(0);
-  const [scanHistory, setScanHistory] = useState<{ time: string, text: string }[]>([]);
-  const [currentTime, setCurrentTime] = useState("");
-
-  const [toast, setToast] = useState({ show: false, message: "", city: "", time: "" });
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scanState === 'SCANNING') {
-      terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [scanHistory, scanState]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString('fr-FR', { hour12: false })), 1000);
-    return () => clearInterval(timer);
+  // Fake profile for results
+  const fakeProfile = useMemo<FakeProfile>(() => {
+    const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+    return {
+      city,
+      hrs: Math.floor(Math.random() * 6) + 1,
+      km: Math.floor(Math.random() * 15) + 3,
+      age: Math.floor(Math.random() * 8) + 22,
+      photos: Math.floor(Math.random() * 3) + 3,
+      bio: "Aventurier·e dans l'âme 🌍 | Amateur·ice de bons restos et de randonnées | Si tu aimes les chiens, on s'entendra bien 🐕 | Ici pour des rencontres authentiques",
+      interests: ["Voyages", "Cuisine", "Sport", "Cinéma", "Musique"],
+    };
   }, []);
 
+  // scroll terminal
   useEffect(() => {
-    const updateMarquee = () => {
-      const city = CITIES[Math.floor(Math.random() * CITIES.length)];
-      const app = APPS[Math.floor(Math.random() * APPS.length)];
-      setRecentFind(`Profil ${app} ${ACTIONS[Math.floor(Math.random() * ACTIONS.length)]} ${city.split(' ')[0]}`);
+    if (screen === "SCAN") termRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [scanLogs, screen]);
+
+  // elapsed timer
+  useEffect(() => {
+    if (screen === "SCAN" && scanPhase !== "DONE") {
+      startTime.current = Date.now();
+      timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 200);
+      return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }
+    if (scanPhase === "DONE" && timerRef.current) clearInterval(timerRef.current);
+  }, [screen, scanPhase]);
+
+  // ticker + toast
+  useEffect(() => {
+    const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
+    const gen = () => `${pick(NAMES)} — ${pick(ACTIONS)} ${pick(CITIES)}`;
+    setTicker(gen());
+    const t1 = setInterval(() => setTicker(gen()), 4500);
+    const t2 = setInterval(() => setLiveCount(p => Math.max(32, Math.min(64, p + (Math.random() > .5 ? 1 : -1)))), 5000);
+    const fire = () => {
+      setToast({ app: pick(APPS), city: pick(CITIES), ago: Math.floor(Math.random() * 8) + 1 });
+      setTimeout(() => setToast(null), 6000);
     };
-
-    updateMarquee();
-    const findInterval = setInterval(updateMarquee, 3500);
-    const scanInterval = setInterval(() => setLiveScans(prev => Math.max(38, prev + (Math.random() > 0.5 ? 1 : -1))), 5000);
-
-    const triggerToast = () => {
-      const city = CITIES[Math.floor(Math.random() * CITIES.length)];
-      const app = APPS[Math.floor(Math.random() * APPS.length)];
-      setToast({
-        show: true,
-        message: `Un compte ${app} actif a été localisé.`,
-        city: `📍 Investigation terminée à ${city}`,
-        time: `Il y a ${Math.floor(Math.random() * 5) + 1} min`
-      });
-      setTimeout(() => setToast(prev => ({ ...prev, show: false })), 5000);
-    };
-
-    const toastTimer = setTimeout(triggerToast, 4000);
-    const toastInterval = setInterval(triggerToast, 22000);
-
-    return () => { clearInterval(findInterval); clearInterval(scanInterval); clearTimeout(toastTimer); clearInterval(toastInterval); };
+    const t3 = setTimeout(fire, 6000);
+    const t4 = setInterval(fire, 30000);
+    return () => { clearInterval(t1); clearInterval(t2); clearTimeout(t3); clearInterval(t4); };
   }, []);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-      setUploadedPhotos(prev => [...prev, ...newFiles].slice(0, 3));
-    }
+  const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) setPhotos(p => [...p, ...Array.from(e.target.files!).map(f => URL.createObjectURL(f))].slice(0, 3));
   };
 
-  const removePhoto = (index: number) => {
-    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
-  };
+  const ts = (): string => new Date().toLocaleTimeString("fr-FR", { hour12: false });
+  const addLog = (text: string, type: LogType = "info") => setScanLogs(p => [...p, { time: ts(), text, type }]);
 
-  const handleScan = () => {
-    if (activeTab === 'DATING_APP' && !targetInput.name) {
-      return alert("Veuillez au moins renseigner le Nom et Prénom de la cible.");
-    }
-    if (activeTab === 'FACE' && uploadedPhotos.length === 0) {
-      return alert("Veuillez uploader au moins 1 photo pour lancer l'analyse faciale.");
-    }
+  /* ════════ SCAN ENGINE ════════ */
+  const startScan = () => {
+    if (tab === "APP" && !input.name.trim()) return alert("Renseignez au moins le nom.");
+    if (tab === "FACE" && !photos.length) return alert("Uploadez au moins 1 photo.");
+    setScreen("SCAN");
+    setScanLogs([]);
+    setAppStatus(["wait", "wait", "wait"]);
+    setScanPhase("INIT");
+    setScanPct(0);
+    setElapsed(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
-    setScanState('SCANNING');
-    setScanProgress(0);
-    setScanHistory([{ time: new Date().toLocaleTimeString('fr-FR', { hour12: false }), text: "Initialisation du protocole IA..." }]);
-    window.scrollTo(0, 0);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    let t = 0;
+    const sched = (delay: number, fn: () => void) => { t += delay; timeouts.push(setTimeout(fn, t)); };
 
-    const interval = setInterval(() => {
-      setScanProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setScanState('LOCKED'), 1000);
-          return 100;
-        }
-        if (prev % 6 === 0) {
-          const logIndex = Math.floor(prev / 6);
-          if (HACK_LOGS[logIndex]) {
-            setScanHistory(curr => [...curr, { time: new Date().toLocaleTimeString('fr-FR', { hour12: false }), text: HACK_LOGS[logIndex] }]);
-          }
-        }
-        return prev + 1;
-      });
-    }, 300);
+    // PHASE 1: CONNECTION (~6s)
+    sched(500, () => { setScanPhase("CONNECT"); addLog("Initialisation du protocole d'investigation…"); });
+    sched(1200, () => { addLog("Établissement d'une connexion chiffrée (TLS 1.3)…"); setScanPct(2); });
+    sched(1400, () => { addLog("Proxy résidentiel assigné — FR-CDG-04 (Paris)", "success"); setScanPct(4); });
+    sched(1000, () => { addLog("Vérification de l'empreinte numérique… OK", "success"); setScanPct(6); });
+    sched(1200, () => { addLog("Rotation de l'identité navigateur (User-Agent)…"); setScanPct(8); });
+    sched(800, () => { addLog("Connexion sécurisée établie — Aucune fuite détectée", "success"); setScanPct(10); });
+
+    // PHASE 2: TINDER (~16s)
+    sched(1500, () => { setScanPhase("TINDER"); setAppStatus(["scan", "wait", "wait"]); addLog("──── Analyse Tinder (2.4M profils indexés) ────"); setScanPct(12); });
+    sched(1800, () => { addLog("Interrogation de l'index Tinder Europe (FR)…"); setScanPct(16); });
+    sched(2200, () => { addLog("Filtrage par tranche d'âge et géolocalisation…"); setScanPct(20); });
+    sched(1600, () => { addLog("342 profils correspondants dans la zone…"); setScanPct(24); });
+    sched(2000, () => { addLog("Comparaison biométrique en cours (FaceTrace v4)…"); setScanPct(28); });
+    sched(2400, () => { addLog("Analyse des métadonnées de profil…"); setScanPct(32); });
+    sched(1800, () => { addLog("Correspondance identifiée — Vérification croisée…", "warning"); setScanPct(35); });
+    sched(2200, () => { addLog("✓ CORRESPONDANCE CONFIRMÉE — Profil Tinder actif détecté", "critical"); setAppStatus(["found", "wait", "wait"]); setScanPct(40); });
+
+    // PHASE 3: BUMBLE (~12s)
+    sched(1500, () => { setScanPhase("BUMBLE"); setAppStatus(prev => [prev[0], "scan", prev[2]]); addLog("──── Analyse Bumble (1.8M profils indexés) ────"); setScanPct(44); });
+    sched(1600, () => { addLog("Interrogation de l'index Bumble France…"); setScanPct(48); });
+    sched(2000, () => { addLog("Filtrage des profils par critères démographiques…"); setScanPct(52); });
+    sched(1800, () => { addLog("187 profils correspondants identifiés…"); setScanPct(56); });
+    sched(2200, () => { addLog("Comparaison des données de profil…"); setScanPct(60); });
+    sched(1400, () => { addLog("Aucune correspondance significative trouvée"); setScanPct(64); });
+    sched(800, () => { addLog("✗ Bumble — Aucun profil actif détecté", "clean"); setAppStatus(prev => [prev[0], "clean", prev[2]]); setScanPct(66); });
+
+    // PHASE 4: HINGE (~12s)
+    sched(1500, () => { setScanPhase("HINGE"); setAppStatus(prev => [prev[0], prev[1], "scan"]); addLog("──── Analyse Hinge (920K profils indexés) ────"); setScanPct(70); });
+    sched(1400, () => { addLog("Interrogation de l'index Hinge France…"); setScanPct(73); });
+    sched(1800, () => { addLog("Filtrage par zone géographique…"); setScanPct(76); });
+    sched(1600, () => { addLog("94 profils dans la zone de recherche…"); setScanPct(80); });
+    sched(2000, () => { addLog("Analyse comparative des profils Hinge…"); setScanPct(84); });
+    sched(1200, () => { addLog("Aucune correspondance identifiée"); setScanPct(87); });
+    sched(800, () => { addLog("✗ Hinge — Aucun profil actif détecté", "clean"); setAppStatus(prev => [prev[0], prev[1], "clean"]); setScanPct(90); });
+
+    // PHASE 5: COMPILATION (~5s)
+    sched(1200, () => { setScanPhase("COMPILE"); addLog("──── Compilation du rapport ────"); setScanPct(92); });
+    sched(1400, () => { addLog("Extraction des captures de profil…"); setScanPct(94); });
+    sched(1200, () => { addLog("Sauvegarde des métadonnées (bio, photos, activité)…"); setScanPct(96); });
+    sched(1000, () => { addLog("Chiffrement du rapport d'investigation (AES-256)…"); setScanPct(98); });
+    sched(800, () => { addLog("Rapport finalisé — Prêt pour téléchargement", "success"); setScanPct(100); });
+    sched(600, () => { addLog("Purge sécurisée des traces de connexion… OK", "success"); setScanPhase("DONE"); });
+    sched(2500, () => { setScreen("RESULT"); });
   };
 
   const faqs = [
-    { q: "Le scan est-il vraiment anonyme ?", a: "À 100%. Nous n'interagissons jamais avec les serveurs des applications de manière directe via votre profil. Nous utilisons des comptes 'Shadow' et des API en lecture seule. La cible ne reçoit aucune notification." },
-    { q: "Qu'apparaîtra-t-il sur mon relevé bancaire ?", a: "La discrétion est notre priorité. Le libellé sera neutre ('TS-SERVICES' ou 'WEB-INTEL'). Le nom de notre site n'apparaîtra jamais." },
-    { q: "Pourquoi demander le nom d'utilisateur RS ?", a: "Cela permet à notre IA de croiser les photos de profil avec les réseaux sociaux (Instagram, TikTok) pour confirmer l'identité à 100% sur Tinder, Hinge ou Bumble." },
-    { q: "Que se passe-t-il si l'IA ne trouve rien ?", a: "Nous vous délivrons un certificat d'absence numérique attestant qu'aucun profil n'a été détecté sur le Big 3. Vous pourrez enfin retrouver votre sérénité." }
+    { q: "Le scan est-il anonyme ?", a: "Totalement. Nous utilisons des proxys résidentiels et des identités de navigation rotatives. La cible ne reçoit aucune notification." },
+    { q: "Qu'apparaît sur mon relevé bancaire ?", a: "Un libellé neutre « TS-DIGITAL » ou « WEB-SERVICES ». Le nom CocuOuPas n'apparaîtra jamais." },
+    { q: "Pourquoi renseigner un pseudo Instagram ?", a: "Notre moteur croise les photos entre les réseaux sociaux et les apps de dating pour confirmer l'identité de la personne." },
+    { q: "Et si aucun profil n'est trouvé ?", a: "Vous recevez un certificat d'absence numérique. Aucun frais n'est engagé si le résultat est négatif." },
+    { q: "Quelles applications sont analysées ?", a: "Tinder, Bumble et Hinge — elles couvrent plus de 95% du marché des apps de rencontre en France." },
   ];
 
-  return (
-    <div className="min-h-screen bg-[#070000] text-white font-sans selection:bg-red-500/30 overflow-x-hidden relative">
+  const testimonials = [
+    { name: "Marine L.", city: "Lyon", text: "Des doutes depuis des mois. En une minute j'avais un rapport complet avec les captures. Difficile mais nécessaire.", stars: 5 },
+    { name: "Thomas R.", city: "Paris", text: "On m'accusait d'être parano. Le rapport PDF avec les preuves m'a donné raison.", stars: 5 },
+    { name: "Sophie M.", city: "Bordeaux", text: "Rien trouvé. Honnêtement, payer 4€ pour retrouver le sommeil, c'est rien.", stars: 5 },
+    { name: "Julien K.", city: "Lille", text: "Profil Bumble actif, photos récentes. J'ai pu confronter avec des preuves concrètes.", stars: 5 },
+  ];
 
-      {/* TOAST NOTIFICATION */}
-      <div className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[100] transition-all duration-500 transform ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
-        <div className="bg-white text-slate-900 p-4 md:p-5 rounded-2xl shadow-2xl border-l-4 border-red-600 flex items-start gap-3 md:gap-4 max-w-[90vw] md:max-w-sm">
-          <div className="bg-red-50 p-2 rounded-full text-red-600 animate-pulse shrink-0"><ShieldAlert size={18} /></div>
-          <div>
-            <p className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase tracking-tighter">{toast.city}</p>
-            <p className="text-xs md:text-sm font-black leading-tight text-slate-800">{toast.message}</p>
-            <p className="text-[9px] md:text-[10px] text-slate-400 flex items-center gap-1 mt-1 font-bold"><Clock size={10} /> {toast.time}</p>
+  const formatTime = (s: number): string => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  /* ═══ STYLES ═══ */
+  const css = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{
+  --bg:#050505;--s1:#0a0a0a;--s2:#0f0f0f;--s3:#161616;
+  --bd:rgba(255,255,255,.06);--bd2:rgba(255,255,255,.1);
+  --red:#dc2626;--red-d:#7f1d1d;--red-l:#fca5a5;
+  --gold:#f59e0b;--gold-l:#fbbf24;
+  --green:#22c55e;--blue:#3b82f6;--purple:#8b5cf6;
+  --t1:#fff;--t2:rgba(255,255,255,.55);--t3:rgba(255,255,255,.25);--t4:rgba(255,255,255,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:rgba(220,38,38,.2)}
+
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes slideInR{from{transform:translateX(120%)}to{transform:translateX(0)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.2)}50%{box-shadow:0 0 50px 4px rgba(220,38,38,.08)}}
+@keyframes progressStripe{0%{background-position:0 0}100%{background-position:40px 0}}
+@keyframes dotPulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+.fu{animation:fadeUp .5s ease both}
+.fi{animation:fadeIn .4s ease both}
+.d1{animation-delay:.06s}.d2{animation-delay:.12s}.d3{animation-delay:.18s}.d4{animation-delay:.24s}.d5{animation-delay:.3s}
+
+.mq{display:flex;animation:marquee 40s linear infinite}
+
+.term::-webkit-scrollbar{width:3px}
+.term::-webkit-scrollbar-track{background:transparent}
+.term::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px}
+
+.log-info{color:#6ee7b7}
+.log-success{color:#4ade80;font-weight:600}
+.log-warning{color:#fbbf24;font-weight:600}
+.log-critical{color:#ef4444;font-weight:700}
+.log-clean{color:rgba(255,255,255,.35);font-style:italic}
+.log-section{color:rgba(255,255,255,.15);font-weight:600;letter-spacing:.04em}
+
+.bp{background:linear-gradient(135deg,#991b1b,#450a0a);color:#fff;border:none;cursor:pointer;font-weight:700;transition:all .15s}
+.bp:hover{filter:brightness(1.2);transform:translateY(-1px)}.bp:active{transform:scale(.97)}
+.bg{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;cursor:pointer;font-weight:700;transition:all .15s}
+.bg:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 16px 48px -8px rgba(245,158,11,.3)}.bg:active{transform:scale(.97)}
+input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,255,255,.03)!important}
+
+.blur-content{filter:blur(6px);user-select:none;pointer-events:none}
+.blur-heavy{filter:blur(10px);user-select:none;pointer-events:none}
+
+.noise::before{content:'';position:fixed;inset:0;opacity:.012;pointer-events:none;z-index:9999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.progress-bar{background-size:40px 40px;background-image:repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,.03) 8px,rgba(255,255,255,.03) 16px);animation:progressStripe 1s linear infinite}
+
+.dots span{display:inline-block;animation:dotPulse 1.4s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+  `;
+
+  // ════════════════════ RENDER ════════════════════
+  return (
+    <div className="noise" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "'DM Sans',sans-serif" }}>
+      <style>{css}</style>
+
+      {/* ── TOAST ── */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 300, animation: "slideInR .45s cubic-bezier(.16,1,.3,1) both" }}>
+          <div style={{ background: "#fff", color: "#111", padding: "14px 18px", borderRadius: 14, display: "flex", gap: 12, alignItems: "center", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,.5)", borderLeft: "3px solid var(--red)" }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>{toast.app.icon}</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>Profil {toast.app.name} détecté</p>
+              <p style={{ fontSize: 11, color: "#999", marginTop: 2 }}>📍 {toast.city} · il y a {toast.ago} min</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* MARQUEE BAR */}
-      <div className="w-full bg-[#ffcc00] text-black py-2 md:py-3 flex whitespace-nowrap text-[9px] md:text-[11px] font-black tracking-tighter uppercase border-b border-black/10 fixed top-0 z-[90] shadow-xl overflow-hidden">
-        <div className="animate-marquee flex gap-8 md:gap-12 items-center">
-          {[...Array(8)].map((_, i) => (
-            <span key={i} className="flex items-center gap-4 md:gap-6">
-              <span className="flex items-center gap-1.5 md:gap-2"><AlertTriangle size={12} className="text-red-600" /> {liveScans} EN COURS</span>
-              <span className="flex items-center gap-1.5 md:gap-2 text-red-700 bg-white/50 px-2 md:px-3 py-0.5 rounded-full font-extrabold italic">{recentFind}</span>
-              <span className="flex items-center gap-1.5 md:gap-2">PRIX UNIQUE : 3,99€ <TrendingUp size={12} /></span>
+      {/* ── MARQUEE ── */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, background: "#000", borderBottom: "1px solid var(--bd)", padding: "9px 0", overflow: "hidden" }}>
+        <div className="mq" style={{ gap: 40, whiteSpace: "nowrap", fontSize: 11, fontWeight: 600, color: "var(--t3)" }}>
+          {[...Array(10)].map((_, i) => (
+            <span key={i} style={{ display: "flex", alignItems: "center", gap: 28, flexShrink: 0 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span className="pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />
+                <span style={{ color: "var(--t2)" }}>{liveCount} scans actifs</span>
+              </span>
+              <span style={{ color: "var(--t2)" }}>{ticker}</span>
+              <span style={{ color: "var(--gold)", fontWeight: 700 }}>Accès unique : 3,99€</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* =========================================
-          ÉCRAN 1 : LANDING PAGE
-          ========================================= */}
-      {scanState === 'IDLE' && (
-        <main className="animate-in fade-in duration-700">
-
-          <nav className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 flex justify-between items-center relative z-50 mt-12 md:mt-14">
-            <div className="flex items-center gap-2 cursor-pointer group">
-              <div className="bg-red-600 p-1.5 md:p-2 rounded-lg shadow-lg rotate-3 group-hover:rotate-0 transition-all">
-                <span className="text-xl md:text-2xl font-black tracking-tighter italic">C<span className="text-yellow-400">O</span>P</span>
-              </div>
-              <span className="text-lg md:text-xl font-black tracking-tighter uppercase italic hidden xs:block">CocuOuPas<span className="text-red-600">.fr</span></span>
+      {/* ═══════════ HOME ═══════════ */}
+      {screen === "HOME" && (
+        <div className="fi">
+          <nav style={{ maxWidth: 1100, margin: "0 auto", padding: "52px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ background: "var(--red)", padding: "5px 9px", borderRadius: 8, fontWeight: 800, fontStyle: "italic", fontSize: 18 }}>C<span style={{ color: "var(--gold)" }}>O</span>P</div>
+              <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: "-.02em" }}>CocuOuPas<span style={{ color: "var(--red)" }}>.fr</span></span>
             </div>
-            <div className="hidden lg:flex gap-10 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
-              <a href="#how" className="hover:text-white transition-colors">Méthode</a>
-              <a href="#tech" className="hover:text-white transition-colors">IA-Core</a>
-              <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
-              <a href="#pricing" className="text-yellow-500 hover:text-yellow-400">Accès</a>
-            </div>
-            <div className="flex items-center gap-2 bg-white/5 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10">
-              <Lock size={12} className="text-green-500" />
-              <span className="text-[9px] md:text-[10px] font-black uppercase text-green-500 tracking-widest">Sécurisé</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,.06)", padding: "5px 12px", borderRadius: 100, border: "1px solid rgba(34,197,94,.12)" }}>
+              {IC.lock({ s: 11, c: "#22c55e" })}<span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", letterSpacing: ".08em", textTransform: "uppercase" }}>Chiffré</span>
             </div>
           </nav>
 
-          <section className="max-w-6xl mx-auto px-4 md:px-6 pt-10 md:pt-16 pb-16 md:pb-24 text-center relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] md:h-[500px] bg-red-600/10 blur-[80px] md:blur-[120px] -z-10 rounded-full" />
-            <h1 className="text-5xl md:text-[7.5rem] font-black tracking-tighter leading-[0.85] uppercase italic mb-6 md:mb-8 drop-shadow-2xl">
-              LA VÉRITÉ POUR LE <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">PRIX D'UN CAFÉ !</span>
+          <section className="fu" style={{ maxWidth: 920, margin: "0 auto", textAlign: "center", padding: "68px 20px 48px", position: "relative" }}>
+            <div style={{ position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)", width: 500, height: 350, background: "radial-gradient(circle,rgba(220,38,38,.05) 0%,transparent 70%)", pointerEvents: "none" }} />
+            <div className="fu" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 100, padding: "7px 16px", marginBottom: 28, fontSize: 12, fontWeight: 600, color: "var(--t2)" }}>
+              {IC.activity({ s: 14, c: "var(--green)" })} 84 000+ investigations en France
+            </div>
+            <h1 className="fu d1" style={{ fontSize: "clamp(36px,7vw,84px)", fontWeight: 800, letterSpacing: "-.045em", lineHeight: .9, marginBottom: 24 }}>
+              La vérité,<br />
+              <span style={{ background: "linear-gradient(135deg,var(--gold-l),var(--gold),#ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>pour le prix d&apos;un café.</span>
             </h1>
-            <p className="max-w-2xl mx-auto text-white/60 text-sm md:text-xl font-medium mb-10 md:mb-16 italic px-2">
-              "Ne laissez plus le doute détruire vos nuits. Identifiez les profils cachés en 60 secondes."
+            <p className="fu d2" style={{ maxWidth: 480, margin: "0 auto 44px", color: "var(--t2)", fontSize: "clamp(14px,1.8vw,17px)", lineHeight: 1.65 }}>
+              Découvrez en 60 secondes si votre partenaire est inscrit(e) sur Tinder, Bumble ou Hinge. Anonyme et intraçable.
             </p>
 
-            {/* CONSOLE DE RECHERCHE */}
-            <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,1)] text-slate-900 max-w-4xl mx-auto relative z-20 overflow-hidden">
-
-              <div className="flex text-center font-black text-[10px] md:text-sm tracking-[0.1em] uppercase bg-[#f8f9fa] border-b border-slate-200">
-                <button
-                  onClick={() => setActiveTab('DATING_APP')}
-                  className={`flex-1 py-4 md:py-6 flex justify-center items-center gap-2 md:gap-3 transition-all duration-300 relative ${activeTab === 'DATING_APP' ? 'bg-white text-red-600 border-2 border-b-0 border-[#1a73e8] rounded-t-2xl z-10' : 'text-slate-400 hover:text-slate-600 border-b border-slate-200'}`}
-                >
-                  <Search size={16} className="md:w-[18px] md:h-[18px]" /> Dating Apps
-                </button>
-                <button
-                  onClick={() => setActiveTab('FACE')}
-                  className={`flex-1 py-4 md:py-6 flex justify-center items-center gap-2 md:gap-3 transition-all duration-300 relative ${activeTab === 'FACE' ? 'bg-white text-red-600 border-2 border-b-0 border-[#1a73e8] rounded-t-2xl z-10' : 'text-slate-400 hover:text-slate-600 border-b border-slate-200'}`}
-                >
-                  <Camera size={16} className="md:w-[18px] md:h-[18px]" /> FaceTrace IA
-                </button>
+            {/* SEARCH CARD */}
+            <div className="fu d3" style={{ background: "#fff", borderRadius: 24, maxWidth: 660, margin: "0 auto", overflow: "hidden", boxShadow: "0 40px 100px -25px rgba(0,0,0,.85)" }}>
+              <div style={{ display: "flex", borderBottom: "2px solid #f0f0f0" }}>
+                {([{ id: "APP" as Tab, label: "Par identité", icon: IC.search }, { id: "FACE" as Tab, label: "Par photo (IA)", icon: IC.camera }]).map(t => (
+                  <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "15px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", background: tab === t.id ? "#fff" : "#fafafa", color: tab === t.id ? "var(--red)" : "#b0b0b0", borderBottom: tab === t.id ? "3px solid var(--red)" : "3px solid transparent", transition: "all .2s" }}>
+                    {t.icon({ s: 15 })} {t.label}
+                  </button>
+                ))}
               </div>
-
-              <div className="p-5 md:p-12 space-y-6 md:space-y-8 bg-white border-x-2 border-b-2 border-transparent">
-                <div className="text-left space-y-1 mb-2 md:mb-6">
-                  <h3 className="text-xl md:text-3xl font-black tracking-tight italic text-[#1a1a1a]">Cibler un individu :</h3>
-                  <p className="text-slate-500 text-[11px] md:text-sm font-medium">Plus vous donnez d'informations, plus le scan est précis.</p>
-                </div>
-
-                {activeTab === 'DATING_APP' ? (
-                  <div className="space-y-3 md:space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="relative group w-full">
-                      <User className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input
-                        type="text" value={targetInput.name} onChange={(e) => setTargetInput({ ...targetInput, name: e.target.value })}
-                        placeholder="Nom et Prénom de la cible..."
-                        className="w-full bg-[#f8f9fa] border-2 border-[#f1f3f5] rounded-xl md:rounded-2xl px-11 md:px-14 py-3.5 md:py-5 text-sm md:text-lg font-bold focus:outline-none focus:border-red-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400"
-                      />
+              <div style={{ padding: "28px 28px 24px", color: "#111" }}>
+                {tab === "APP" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ position: "relative" }}>
+                      <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.user({ s: 17 })}</div>
+                      <input value={input.name} onChange={e => setInput({ ...input, name: e.target.value })} placeholder="Nom et Prénom *" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} />
                     </div>
-                    <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-                      <div className="relative group flex-1">
-                        <AtSign className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                          type="text" value={targetInput.username} onChange={(e) => setTargetInput({ ...targetInput, username: e.target.value })}
-                          placeholder="Pseudo RS (Insta...)"
-                          className="w-full bg-[#f8f9fa] border-2 border-[#f1f3f5] rounded-xl md:rounded-2xl px-11 md:px-14 py-3.5 md:py-5 text-sm md:text-lg font-bold focus:outline-none focus:border-red-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400"
-                        />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <div style={{ position: "relative", flex: 1 }}>
+                        <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.at({ s: 17 })}</div>
+                        <input value={input.username} onChange={e => setInput({ ...input, username: e.target.value })} placeholder="Pseudo Instagram" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} />
                       </div>
-                      <div className="relative group flex-1">
-                        <Calendar className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                          type="text" value={targetInput.dob} onChange={(e) => setTargetInput({ ...targetInput, dob: e.target.value })}
-                          placeholder="Date naissance (JJ/MM/AA)"
-                          className="w-full bg-[#f8f9fa] border-2 border-[#f1f3f5] rounded-xl md:rounded-2xl px-11 md:px-14 py-3.5 md:py-5 text-sm md:text-lg font-bold focus:outline-none focus:border-red-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400"
-                        />
+                      <div style={{ position: "relative", flex: 1 }}>
+                        <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.calendar({ s: 17 })}</div>
+                        <input value={input.dob} onChange={e => setInput({ ...input, dob: e.target.value })} placeholder="Date de naissance" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="w-full border-2 border-dashed border-slate-300 rounded-xl md:rounded-2xl p-6 md:p-8 text-center bg-[#f8f9fa] hover:bg-slate-50 transition-colors">
-                      <input
-                        type="file" multiple accept="image/*" className="hidden" id="face-upload"
-                        onChange={handleFileUpload} disabled={uploadedPhotos.length >= 3}
-                      />
-                      <label htmlFor="face-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-3 md:space-y-4">
-                        <div className="bg-white p-3 md:p-4 rounded-full shadow-sm text-slate-400">
-                          <UploadCloud size={24} className="md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                          <p className="text-sm md:text-lg font-bold text-slate-700">Uploadez jusqu'à 3 photos claires.</p>
-                          <p className="text-[10px] md:text-sm text-slate-400 mt-1">Formats acceptés : JPG, PNG (Max 5MB)</p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {uploadedPhotos.length > 0 && (
-                      <div className="flex gap-3 md:gap-4 justify-center">
-                        {uploadedPhotos.map((photo, idx) => (
-                          <div key={idx} className="relative w-16 h-16 md:w-24 md:h-24 rounded-lg md:rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm">
-                            <img src={photo} alt={`Upload ${idx}`} className="w-full h-full object-cover" />
-                            <button onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
-                              <X size={10} className="md:w-3 md:h-3" />
-                            </button>
+                  <div>
+                    <input type="file" multiple accept="image/*" id="face-upload" onChange={onUpload} disabled={photos.length >= 3} style={{ display: "none" }} />
+                    <label htmlFor="face-upload" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "36px 20px", border: "2px dashed #e0e0e0", borderRadius: 16, background: "#fafafa", cursor: "pointer" }}>
+                      <div style={{ background: "#fff", padding: 10, borderRadius: "50%", boxShadow: "0 2px 8px rgba(0,0,0,.05)" }}>{IC.upload({ s: 22, c: "#aaa" })}</div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#444" }}>Uploadez 1 à 3 photos nettes du visage</p>
+                      <p style={{ fontSize: 11, color: "#aaa" }}>JPG, PNG — Max 5 Mo</p>
+                    </label>
+                    {photos.length > 0 && (
+                      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 14 }}>
+                        {photos.map((p, i) => (
+                          <div key={i} style={{ position: "relative", width: 60, height: 60, borderRadius: 10, overflow: "hidden", border: "2px solid #e5e5e5" }}>
+                            <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <button onClick={() => setPhotos(x => x.filter((_, j) => j !== i))} style={{ position: "absolute", top: 3, right: 3, background: "rgba(0,0,0,.6)", border: "none", borderRadius: "50%", padding: 2, cursor: "pointer", display: "flex" }}>{IC.x({ s: 10, c: "#fff" })}</button>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                 )}
-
-                <div className="pt-2">
-                  <button onClick={handleScan} className="w-full bg-gradient-to-r from-[#7a1010] to-[#4a0000] text-white font-black text-lg md:text-2xl py-4 md:py-6 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 md:gap-3 transition-all shadow-[0_10px_20px_-5px_rgba(120,0,0,0.6)] hover:scale-[1.02] active:scale-95 uppercase italic tracking-widest">
-                    LANCER L'INVESTIGATION <ChevronRight size={20} className="md:w-[28px] md:h-[28px]" strokeWidth={4} />
-                  </button>
-                </div>
-
-                <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 md:gap-16 pt-6 md:pt-8 border-t border-slate-100 text-[10px] md:text-xs font-black uppercase text-slate-500">
-                  <span className="flex items-center gap-2"><ShieldCheck size={16} className="text-green-500" /> RECHERCHE 100% ANONYME</span>
-                  <span className="flex items-center gap-2"><Lock size={16} className="text-blue-500" /> DISCRÉTION BANCAIRE</span>
-                  <span className="flex items-center gap-2"><Star size={16} className="text-yellow-400" fill="currentColor" /> 84K+ SCANS</span>
+                <button onClick={startScan} className="bp" style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  Lancer l&apos;investigation {IC.arrowRight({ s: 18 })}
+                </button>
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px 28px", marginTop: 20, paddingTop: 18, borderTop: "1px solid #f0f0f0" }}>
+                  {[{ icon: IC.shield, text: "Anonyme", c: "#22c55e" }, { icon: IC.lock, text: "Libellé discret", c: "#3b82f6" }, { icon: IC.zap, text: "Résultat en 60s", c: "#f59e0b" }].map((t, i) => (
+                    <span key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: ".03em" }}>{t.icon({ s: 13, c: t.c })} {t.text}</span>
+                  ))}
                 </div>
               </div>
             </div>
           </section>
 
-          {/* AS SEEN ON */}
-          <section className="py-8 md:py-12 bg-white/5 opacity-40 font-serif italic text-lg md:text-2xl font-black text-center flex justify-center gap-6 md:gap-20 flex-wrap px-4">
-            <span>Le Parisien</span><span>Cosmo</span><span>GQ</span><span>Konbini</span>
+          {/* STATS */}
+          <section style={{ padding: "44px 20px", borderTop: "1px solid var(--bd)", borderBottom: "1px solid var(--bd)", background: "var(--s1)" }}>
+            <div style={{ maxWidth: 740, margin: "0 auto", display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
+              {[{ val: 84712, label: "Recherches" }, { val: 31847, label: "Profils détectés" }, { val: 37, label: "Résultat en", suffix: " sec" }].map((s, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <p style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-.04em" }}><AnimNum target={s.val} />{s.suffix || ""}</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 4 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
           </section>
 
-          {/* SYMPTÔMES */}
-          <section id="symptoms" className="py-20 md:py-32 bg-black relative">
-            <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10 text-center">
-              <HeartCrack className="w-12 h-12 md:w-16 md:h-16 text-red-600 mx-auto opacity-30 mb-6 md:mb-8" />
-              <h2 className="text-3xl md:text-6xl font-black italic tracking-tighter uppercase mb-12 md:mb-20">Le doute est un poison.</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                {[
-                  { icon: <Smartphone />, title: "Téléphone caché", desc: "Posé face contre table ou emmené partout, même sous la douche." },
-                  { icon: <MessageSquareLock />, title: "Codes modifiés", desc: "Le code de déverrouillage a soudainement changé." },
-                  { icon: <BellOff />, title: "Zéro notification", desc: "L'écran reste noir car les alertes Tinder sont masquées." },
-                  { icon: <Clock />, title: "Retards suspects", desc: "Justifications floues pour des sorties tardives." }
-                ].map((s, i) => (
-                  <div key={i} className="bg-[#0f0f0f] p-6 md:p-10 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 text-left group hover:border-red-600/30 transition-all">
-                    <div className="text-red-600 mb-4 md:mb-6 group-hover:scale-110 transition-transform">{s.icon}</div>
-                    <h3 className="font-black text-base md:text-lg mb-2 md:mb-3 uppercase tracking-tighter italic">{s.title}</h3>
-                    <p className="text-white/50 text-xs md:text-sm leading-relaxed">{s.desc}</p>
+          {/* SYMPTOMS */}
+          <section style={{ padding: "88px 20px", maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 52 }}>
+              <h2 style={{ fontSize: "clamp(24px,4.5vw,44px)", fontWeight: 800, letterSpacing: "-.04em", marginBottom: 10 }}>Vous reconnaissez ces signes ?</h2>
+              <p style={{ color: "var(--t3)", fontSize: 14, maxWidth: 400, margin: "0 auto" }}>Si l&apos;un de ces comportements vous parle, vous méritez une réponse.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
+              {[{ icon: IC.phone, title: "Téléphone verrouillé", desc: "Toujours face retournée, jamais posé sans surveillance." }, { icon: IC.msgLock, title: "Conversations supprimées", desc: "Un historique trop propre. Des apps supprimées puis réinstallées." }, { icon: IC.bellOff, title: "Notifications masquées", desc: "L'écran ne s'allume plus jamais. Toutes les alertes sont coupées." }, { icon: IC.clock, title: "Absences inexpliquées", desc: "Des « heures sup » devenues suspectes et répétitives." }].map((s, i) => (
+                <div key={i} style={{ background: "var(--s1)", borderRadius: 20, padding: "30px 24px", border: "1px solid var(--bd)" }}>
+                  <div style={{ color: "var(--red)", marginBottom: 14 }}>{s.icon({ s: 20 })}</div>
+                  <h3 style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{s.title}</h3>
+                  <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.6 }}>{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* HOW */}
+          <section style={{ padding: "80px 20px", maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 52 }}>
+              <h2 style={{ fontSize: "clamp(24px,4.5vw,44px)", fontWeight: 800, letterSpacing: "-.04em", marginBottom: 10 }}>Comment ça marche ?</h2>
+              <p style={{ color: "var(--t3)", fontSize: 14 }}>Trois étapes. Une minute. Zéro trace.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 18 }}>
+              {[{ n: "01", title: "Renseignez", desc: "Nom, pseudo ou photo. Plus d'informations = plus de précision." }, { n: "02", title: "L'IA scanne", desc: "Analyse simultanée de Tinder, Bumble et Hinge via proxys résidentiels. Invisible." }, { n: "03", title: "Résultat clair", desc: "Verdict par application. Si un profil est trouvé : captures, bio et localisation dans un rapport PDF." }].map((h, i) => (
+                <div key={i} style={{ background: "var(--s1)", borderRadius: 22, padding: "38px 26px", border: "1px solid var(--bd)", position: "relative" }}>
+                  <span style={{ position: "absolute", top: -13, left: 20, background: "var(--red)", color: "#fff", fontWeight: 800, fontSize: 13, width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px -4px rgba(220,38,38,.4)" }}>{h.n}</span>
+                  <h3 style={{ fontWeight: 800, fontSize: 18, marginBottom: 10, marginTop: 4, letterSpacing: "-.02em" }}>{h.title}</h3>
+                  <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.7 }}>{h.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* TESTIMONIALS */}
+          <section style={{ padding: "72px 20px", background: "var(--s1)", borderTop: "1px solid var(--bd)", borderBottom: "1px solid var(--bd)" }}>
+            <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+              <h2 style={{ fontSize: "clamp(22px,4vw,36px)", fontWeight: 800, letterSpacing: "-.03em", textAlign: "center", marginBottom: 36 }}>Ils ont osé savoir.</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 14 }}>
+                {testimonials.map((t, i) => (
+                  <div key={i} style={{ background: "var(--s2)", borderRadius: 18, padding: "26px 22px", border: "1px solid var(--bd)" }}>
+                    <div style={{ display: "flex", gap: 1, marginBottom: 12 }}>{[...Array(t.stars)].map((_, j) => <span key={j} style={{ color: "var(--gold)", fontSize: 12 }}>★</span>)}</div>
+                    <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.6, marginBottom: 16, fontStyle: "italic" }}>&ldquo;{t.text}&rdquo;</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--red-d)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12 }}>{t.name[0]}</div>
+                      <div><p style={{ fontWeight: 700, fontSize: 12 }}>{t.name}</p><p style={{ fontSize: 10, color: "var(--t3)" }}>{t.city}</p></div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* COMMENT ÇA MARCHE */}
-          <section id="how" className="py-20 md:py-32 max-w-6xl mx-auto px-4 md:px-6">
-            <div className="text-center mb-12 md:mb-24">
-              <h2 className="text-3xl md:text-6xl font-black italic tracking-tighter uppercase mb-4 md:mb-6">Comment ça marche ?</h2>
-              <p className="text-white/40 text-sm md:text-lg">Trois étapes vers la tranquillité d'esprit.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12">
-              {[
-                { icon: <Binary />, title: "Indexation Cloud", desc: "Notre IA interroge les serveurs cache de Tinder, Hinge et Bumble pour identifier les profils créés ou mis à jour récemment." },
-                { icon: <Network />, title: "Shadow Crawling", desc: "L'investigation se fait via des proxys résidentiels. Aucune interaction directe avec la cible. Pas de notification." },
-                { icon: <Cpu />, title: "Analyse FacetTrace", desc: "Si vous fournissez une photo, notre moteur biométrique scanne plus de 4 milliards d'images pour isoler le bon profil." }
-              ].map((h, i) => (
-                <div key={i} className="bg-white/5 p-6 md:p-10 rounded-[1.5rem] md:rounded-[3rem] border border-white/5 relative group hover:bg-white/10 transition-all mt-4 md:mt-0">
-                  <div className="text-red-500 mb-6 md:mb-8">{h.icon}</div>
-                  <h3 className="text-xl md:text-2xl font-black italic mb-3 md:mb-4 uppercase">{h.title}</h3>
-                  <p className="text-white/50 text-xs md:text-sm leading-relaxed">{h.desc}</p>
-                  <div className="absolute -top-4 -left-2 md:-left-4 w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center font-black text-lg md:text-xl shadow-xl">0{i + 1}</div>
+          {/* COMPARE */}
+          <section style={{ padding: "88px 20px", maxWidth: 700, margin: "0 auto" }}>
+            <h2 style={{ fontSize: "clamp(22px,4vw,38px)", fontWeight: 800, letterSpacing: "-.03em", textAlign: "center", marginBottom: 36 }}>Pourquoi CocuOuPas ?</h2>
+            <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--bd)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", background: "var(--s2)", padding: "14px 22px", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--t3)", borderBottom: "1px solid var(--bd)" }}>
+                <span /><span style={{ textAlign: "center" }}>Détective</span><span style={{ textAlign: "center", color: "var(--red)" }}>CocuOuPas</span>
+              </div>
+              {[{ l: "Délai", a: "7–15 jours", b: "≈ 60 sec" }, { l: "Tarif", a: "800–2000€", b: "3,99€" }, { l: "Anonymat", a: "Risqué", b: "Garanti" }, { l: "Preuves", a: "Photos floues", b: "Rapport PDF HD" }, { l: "Disponibilité", a: "Heures bureau", b: "24/7" }].map((r, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "13px 22px", borderBottom: "1px solid var(--bd)", fontSize: 12, alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, color: "var(--t2)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".03em" }}>{r.l}</span>
+                  <span style={{ textAlign: "center", color: "var(--t3)" }}>{r.a}</span>
+                  <span style={{ textAlign: "center", color: "var(--green)", fontWeight: 700 }}>{r.b}</span>
                 </div>
               ))}
-            </div>
-          </section>
-
-          {/* COMPARATIF TABLE */}
-          <section id="compare" className="py-20 md:py-32 bg-white text-slate-900">
-            <div className="max-w-5xl mx-auto px-4 md:px-6">
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase text-center mb-10 md:mb-20">Le meilleur choix.</h2>
-              <div className="bg-slate-50 rounded-[1.5rem] md:rounded-[3rem] border-2 border-slate-200 overflow-hidden shadow-xl">
-
-                <div className="overflow-x-auto w-full">
-                  <div className="min-w-[450px] md:min-w-0">
-                    <div className="grid grid-cols-3 bg-slate-900 text-white font-black text-[10px] md:text-xs uppercase tracking-widest p-4 md:p-8 text-center items-center">
-                      <div className="text-left text-sm md:text-lg italic px-2">Critère</div>
-                      <div>Détective Privé</div>
-                      <div className="text-red-400 text-sm md:text-lg italic">CocuOuPas</div>
-                    </div>
-                    {[
-                      { l: "Vitesse", t1: "15 jours", t2: "60 secondes", c: "text-green-600 font-black" },
-                      { l: "Coût", t1: "1500€ +", t2: "3,99€", c: "text-green-600 font-black" },
-                      { l: "Anonymat", t1: "Risqué", t2: "100% Garanti", c: "text-green-600 font-black" },
-                      { l: "Preuves", t1: "Photos floues", t2: "Rapport PDF HD", c: "text-green-600 font-black" }
-                    ].map((row, i) => (
-                      <div key={i} className="grid grid-cols-3 border-b border-slate-200 p-4 md:p-8 text-center text-xs md:text-sm font-bold items-center">
-                        <div className="text-left font-black text-slate-500 uppercase px-2">{row.l}</div>
-                        <div className="text-slate-400">{row.t1}</div>
-                        <div className={row.c}>{row.t2}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
             </div>
           </section>
 
           {/* FAQ */}
-          <section id="faq" className="py-20 md:py-32 max-w-4xl mx-auto px-4 md:px-6">
-            <div className="text-center mb-12 md:mb-20">
-              <HelpCircle className="w-12 h-12 md:w-16 md:h-16 text-red-600 mx-auto opacity-30 mb-4 md:mb-6" />
-              <h2 className="text-3xl md:text-6xl font-black italic tracking-tighter uppercase">Questions fréquentes</h2>
-            </div>
-            <div className="space-y-3 md:space-y-4">
+          <section style={{ padding: "72px 20px 88px", maxWidth: 640, margin: "0 auto" }}>
+            <h2 style={{ fontSize: "clamp(22px,4vw,36px)", fontWeight: 800, letterSpacing: "-.03em", textAlign: "center", marginBottom: 32 }}>Questions fréquentes</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {faqs.map((f, i) => (
-                <div key={i} className="border border-white/5 rounded-xl md:rounded-[2rem] bg-white/5 overflow-hidden">
-                  <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full p-5 md:p-8 flex justify-between items-center text-left hover:bg-white/5 transition-all">
-                    <span className="text-sm md:text-lg font-black italic uppercase tracking-tight">{f.q}</span>
-                    <ChevronDown className={`transition-transform duration-500 shrink-0 text-red-500 ${openFaq === i ? 'rotate-180' : ''}`} size={20} />
+                <div key={i} style={{ borderRadius: 14, border: "1px solid var(--bd)", background: "var(--s1)", overflow: "hidden" }}>
+                  <button onClick={() => setFaq(faq === i ? null : i)} style={{ width: "100%", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: 14, fontWeight: 700 }}>
+                    <span>{f.q}</span>
+                    <span style={{ transform: faq === i ? "rotate(180deg)" : "rotate(0)", transition: "transform .3s", flexShrink: 0, marginLeft: 12, color: "var(--red)" }}>{IC.chevDown({ s: 16 })}</span>
                   </button>
-                  <div className={`transition-all duration-500 ease-in-out ${openFaq === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <p className="p-5 md:p-8 pt-0 text-white/50 text-xs md:text-base leading-relaxed font-medium">{f.a}</p>
+                  <div style={{ maxHeight: faq === i ? 200 : 0, overflow: "hidden", transition: "max-height .35s ease" }}>
+                    <p style={{ padding: "0 18px 16px", color: "var(--t2)", fontSize: 13, lineHeight: 1.6 }}>{f.a}</p>
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* PRICING */}
-          <section id="pricing" className="py-20 md:py-32 max-w-4xl mx-auto px-4 md:px-6">
-            <div className="bg-gradient-to-br from-red-600 to-[#4a0000] rounded-[2rem] md:rounded-[4rem] p-1 shadow-2xl">
-              <div className="bg-[#0a0000] rounded-[1.8rem] md:rounded-[3.8rem] p-8 md:p-20 text-center space-y-8 md:space-y-10">
-                <h2 className="text-3xl md:text-7xl font-black italic tracking-tighter uppercase">DÉBLOQUER LA VÉRITÉ</h2>
-                <div className="flex items-center justify-center gap-3 md:gap-5">
-                  <span className="text-6xl md:text-[10rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600">3,99€</span>
-                  <div className="text-left font-bold text-white/50 leading-none">
-                    <p className="line-through text-lg md:text-2xl mb-1 md:mb-2">19,99€</p>
-                    <p className="text-[9px] md:text-[10px] bg-red-600 text-white px-2 py-1 rounded uppercase font-black italic">Accès Unique</p>
-                  </div>
-                </div>
-                <button onClick={() => window.scrollTo(0, 0)} className="w-full max-w-md bg-yellow-400 text-black font-black text-lg md:text-2xl py-5 md:py-7 rounded-xl md:rounded-3xl shadow-2xl transition-all hover:scale-105 active:scale-95">DÉMARRER L'INVESTIGATION</button>
-                <p className="text-[9px] md:text-[10px] text-white/20 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center justify-center gap-2"><ShieldCheck size={14} /> PAIEMENT SÉCURISÉ STRIPE</p>
+          {/* CTA */}
+          <section style={{ padding: "0 20px 88px", maxWidth: 560, margin: "0 auto" }}>
+            <div style={{ background: "linear-gradient(135deg,#1a0000,#200000)", borderRadius: 28, padding: 2 }}>
+              <div style={{ background: "var(--bg)", borderRadius: 26, padding: "52px 32px", textAlign: "center" }}>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--red)", marginBottom: 16 }}>Accès unique — Sans engagement</p>
+                <p style={{ fontSize: "clamp(40px,10vw,68px)", fontWeight: 800, letterSpacing: "-.04em", marginBottom: 6, background: "linear-gradient(135deg,var(--gold-l),var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>3,99€</p>
+                <p style={{ fontSize: 14, color: "var(--t3)", marginBottom: 32 }}><span style={{ textDecoration: "line-through" }}>19,99€</span><span style={{ background: "var(--red)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 5, marginLeft: 10, textTransform: "uppercase" }}>-80%</span></p>
+                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="bg" style={{ width: "100%", padding: "18px", borderRadius: 16, fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".03em" }}>Démarrer l&apos;investigation</button>
+                <p style={{ fontSize: 10, color: "var(--t3)", marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.shield({ s: 11, c: "var(--t3)" })} Paiement Stripe — Libellé discret</p>
               </div>
             </div>
           </section>
 
           {/* FOOTER */}
-          <footer className="bg-black py-12 md:py-20 px-4 md:px-6 border-t border-white/5">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16 mb-12 md:mb-16 text-center md:text-left">
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex items-center justify-center md:justify-start gap-2">
-                  <div className="bg-red-600 p-1.5 rounded-lg"><span className="text-lg font-black italic">C<span className="text-yellow-400">O</span>P</span></div>
-                  <span className="text-base font-black uppercase italic tracking-widest">CocuOuPas.fr</span>
+          <footer style={{ borderTop: "1px solid var(--bd)", padding: "40px 20px 24px", maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 24, marginBottom: 28 }}>
+              <div style={{ maxWidth: 260 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ background: "var(--red)", padding: "4px 7px", borderRadius: 6, fontWeight: 800, fontStyle: "italic", fontSize: 14 }}>C<span style={{ color: "var(--gold)" }}>O</span>P</div>
+                  <span style={{ fontWeight: 700, fontSize: 13 }}>CocuOuPas.fr</span>
                 </div>
-                <p className="text-white/30 text-[10px] md:text-xs leading-relaxed max-w-xs mx-auto md:mx-0">Leader de l'investigation numérique privée. Nous aidons plus de 400 utilisateurs par jour à retrouver leur sérénité grâce à notre IA de détection spécialisée.</p>
+                <p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.7 }}>Investigation numérique confidentielle.</p>
               </div>
-              <div className="space-y-4 md:space-y-6">
-                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-red-600">Légalité</h4>
-                <ul className="text-white/40 text-[10px] md:text-xs space-y-3 md:space-y-4 font-bold">
-                  <li className="hover:text-white cursor-pointer transition-colors">Mentions Légales</li>
-                  <li className="hover:text-white cursor-pointer transition-colors">CGV / CGU</li>
-                  <li className="hover:text-white cursor-pointer transition-colors">Politique de confidentialité</li>
-                </ul>
-              </div>
-              <div className="space-y-4 md:space-y-6">
-                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-red-600">Assistance</h4>
-                <ul className="text-white/40 text-[10px] md:text-xs space-y-3 md:space-y-4 font-bold">
-                  <li className="hover:text-white cursor-pointer transition-colors">Support 24/7</li>
-                  <li className="hover:text-white cursor-pointer transition-colors">Remboursements</li>
-                  <li className="hover:text-white cursor-pointer transition-colors">Contactez-nous</li>
-                </ul>
-              </div>
-            </div>
-            <p className="text-center text-[8px] md:text-[10px] text-white/10 font-black uppercase tracking-[0.2em] md:tracking-[0.4em]">© 2026 CocuOuPas.fr • INVESTIGATION NUMÉRIQUE</p>
-          </footer>
-        </main>
-      )}
-
-      {/* SCANNING SCREEN */}
-      {scanState === 'SCANNING' && (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 md:px-6 animate-in fade-in zoom-in duration-500 pt-10 md:pt-0">
-          <div className="w-full max-w-3xl space-y-8 md:space-y-10">
-            <div className="text-center space-y-3 md:space-y-4">
-              <div className="relative w-20 h-20 md:w-28 md:h-28 mx-auto mb-6 md:mb-10">
-                <Radar size={80} className="md:w-28 md:h-28 text-red-600 animate-[spin_4s_linear_infinite] opacity-40" />
-                <div className="absolute inset-0 flex items-center justify-center animate-pulse"><Search size={32} className="md:w-[40px] md:h-[40px] text-red-600" /></div>
-              </div>
-              <h2 className="text-2xl md:text-4xl font-black uppercase italic tracking-widest">Investigation en cours...</h2>
-              <p className="text-sm md:text-xl text-red-500 font-black tracking-widest uppercase truncate px-4">
-                CIBLE : <span className="text-white underline decoration-red-600 underline-offset-4 md:underline-offset-8">
-                  {activeTab === 'DATING_APP' ? targetInput.name : "ANALYSE BIOMÉTRIQUE"}
-                </span>
-              </p>
-            </div>
-            <div className="bg-[#050505] rounded-2xl md:rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-              <div className="bg-[#111] px-4 md:px-6 py-3 md:py-4 border-b border-white/5 flex justify-between items-center font-mono text-[9px] md:text-[10px] text-white/30 tracking-widest uppercase italic">
-                <div className="flex items-center gap-2"><Terminal size={12} className="md:w-[14px] md:h-[14px] hidden xs:block" /> TERMINAL V4.2</div>
-                <span className="text-red-600 animate-pulse flex items-center gap-1">● SHADOW LINK</span>
-              </div>
-              <div className="p-5 md:p-10 font-mono text-[10px] md:text-sm space-y-3 md:space-y-4 h-64 md:h-96 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-                {scanHistory.map((l, i) => (
-                  <div key={i} className="flex gap-2 md:gap-4 text-green-500 animate-in slide-in-from-bottom-2">
-                    <span className="text-white/20 shrink-0">[{l.time}]</span>
-                    <span className={l.text.includes("⚠️") ? "text-red-500 font-black italic" : ""}>{l.text}</span>
+              <div style={{ display: "flex", gap: 40 }}>
+                {[{ t: "Légalité", items: ["Mentions légales", "CGV / CGU", "Confidentialité"] }, { t: "Aide", items: ["Support 24/7", "Remboursements", "Contact"] }].map((c, i) => (
+                  <div key={i}><p style={{ fontSize: 9, fontWeight: 800, color: "var(--red)", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 10 }}>{c.t}</p>
+                    {c.items.map(l => <p key={l} style={{ fontSize: 11, color: "var(--t3)", marginBottom: 6, cursor: "pointer" }}>{l}</p>)}
                   </div>
                 ))}
-                <div className="text-green-500/30 animate-pulse">_</div>
-                <div ref={terminalEndRef} />
-              </div>
-              <div className="p-5 md:p-10 bg-[#0a0a0a] border-t border-white/5">
-                <div className="flex justify-between text-[9px] md:text-[11px] font-black uppercase mb-2 md:mb-4 tracking-[0.1em] md:tracking-[0.2em]"><span>Progression</span> <span className="text-red-600">{scanProgress}%</span></div>
-                <div className="h-1.5 md:h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-red-900 via-red-600 to-red-500 transition-all duration-300" style={{ width: `${scanProgress}%` }} />
-                </div>
               </div>
             </div>
+            <p style={{ textAlign: "center", fontSize: 9, color: "var(--t4)", letterSpacing: ".12em", textTransform: "uppercase" }}>© 2026 CocuOuPas.fr</p>
+          </footer>
+        </div>
+      )}
+
+      {/* ═══════════ SCAN ═══════════ */}
+      {screen === "SCAN" && (
+        <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 40px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 720 }}>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,38,38,.08)", border: "1px solid rgba(220,38,38,.15)", borderRadius: 100, padding: "6px 16px", marginBottom: 16, fontSize: 11, fontWeight: 700, color: "var(--red)" }}>
+                <span className="pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />
+                Investigation en cours — {formatTime(elapsed)}
+              </div>
+              <h2 style={{ fontSize: "clamp(18px,3vw,26px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>
+                Analyse de <span style={{ color: "var(--red)", textDecoration: "underline", textUnderlineOffset: 4, textDecorationColor: "rgba(220,38,38,.3)" }}>{tab === "APP" ? input.name : "reconnaissance faciale"}</span>
+              </h2>
+              <p style={{ fontSize: 13, color: "var(--t3)" }}>Scan simultané de 3 bases de données — Ne fermez pas cette page</p>
+            </div>
+
+            {/* APP CARDS */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+              {APPS.map((app, i) => {
+                const st = appStatus[i];
+                const isActive = st === "scan";
+                const bgCol = st === "found" ? "rgba(220,38,38,.05)" : st === "clean" ? "rgba(34,197,94,.03)" : "var(--s1)";
+                const bdCol = st === "found" ? "rgba(220,38,38,.3)" : st === "clean" ? "rgba(34,197,94,.2)" : isActive ? "rgba(255,255,255,.12)" : "var(--bd)";
+                return (
+                  <div key={i} style={{ background: bgCol, borderRadius: 16, padding: "18px 14px", border: `1px solid ${bdCol}`, textAlign: "center", transition: "all .5s", opacity: st === "wait" ? .35 : 1, position: "relative", overflow: "hidden" }}>
+                    {isActive && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${app.color},transparent)`, animation: "marquee 2s linear infinite" }} />}
+                    <span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>{app.icon}</span>
+                    <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{app.name}</p>
+                    <p style={{ fontSize: 10, color: "var(--t3)", marginBottom: 10 }}>{app.db} profils</p>
+                    {st === "wait" && <p style={{ fontSize: 10, color: "var(--t3)" }}>En attente<Dots /></p>}
+                    {st === "scan" && (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <div style={{ width: 12, height: 12, border: "2px solid var(--t3)", borderTopColor: app.color, borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                        <span style={{ fontSize: 11, color: app.color, fontWeight: 700 }}>Analyse<Dots /></span>
+                      </div>
+                    )}
+                    {st === "found" && (
+                      <div className="fu" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                        {IC.alert({ s: 13, c: "var(--red)" })}
+                        <span style={{ fontSize: 11, color: "var(--red)", fontWeight: 800 }}>DÉTECTÉ</span>
+                      </div>
+                    )}
+                    {st === "clean" && (
+                      <div className="fu" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                        {IC.checkCircle({ s: 13, c: "var(--green)" })}
+                        <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}>Aucun profil</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* PROGRESS */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, color: "var(--t3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".06em" }}>
+                <span>Progression globale</span><span style={{ color: scanPct >= 100 ? "var(--green)" : "var(--t2)" }}>{scanPct}%</span>
+              </div>
+              <div style={{ height: 6, background: "var(--s2)", borderRadius: 3, overflow: "hidden" }}>
+                <div className={scanPct < 100 ? "progress-bar" : ""} style={{ height: "100%", width: `${scanPct}%`, background: scanPct >= 100 ? "var(--green)" : "linear-gradient(90deg,#7f1d1d,#dc2626)", transition: "width .4s ease", borderRadius: 3 }} />
+              </div>
+            </div>
+
+            {/* TERMINAL */}
+            <div style={{ background: "#030303", borderRadius: 16, border: "1px solid var(--bd)", overflow: "hidden" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid var(--bd)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "var(--t3)" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{IC.terminal({ s: 11 })} investigation.log</span>
+                <span style={{ color: "var(--red)", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span className="pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />LIVE
+                </span>
+              </div>
+              <div className="term" style={{ padding: "14px 16px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, height: 240, overflowY: "auto", lineHeight: 1.7 }}>
+                {scanLogs.map((l, i) => (
+                  <div key={i} className="fi" style={{ display: "flex", gap: 10, marginBottom: 3 }}>
+                    <span style={{ color: "var(--t4)", flexShrink: 0, fontSize: 10 }}>{l.time}</span>
+                    <span className={l.text.startsWith("────") ? "log-section" : `log-${l.type}`}>{l.text}</span>
+                  </div>
+                ))}
+                <span className="pulse" style={{ color: "var(--green)", opacity: .25 }}>█</span>
+                <div ref={termRef} />
+              </div>
+            </div>
+
+            {scanPhase === "DONE" && (
+              <div className="fu" style={{ textAlign: "center", marginTop: 20 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.15)", borderRadius: 100, padding: "8px 18px", fontSize: 12, fontWeight: 700, color: "var(--green)" }}>
+                  {IC.checkCircle({ s: 14, c: "var(--green)" })} Investigation terminée — Compilation du rapport…
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* RESULTATS POSITIFS */}
-      {scanState === 'LOCKED' && (
-        <div className="min-h-screen bg-[#050000] pt-16 md:pt-24 px-4 md:px-6 animate-in slide-in-from-bottom-12 duration-700 pb-16">
-          <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-            <div className="bg-red-600/10 border-2 border-red-600/50 rounded-[1.5rem] md:rounded-[3rem] p-8 md:p-12 text-center space-y-3 md:space-y-4 shadow-[0_0_80px_rgba(220,38,38,0.2)] animate-pulse">
-              <AlertTriangle size={40} className="md:w-[64px] md:h-[64px] text-red-600 mx-auto" />
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase text-white">MATCH POSITIF !</h2>
-              <p className="text-red-200 text-sm md:text-xl font-bold uppercase tracking-widest leading-snug px-2 truncate">
-                Profil de <strong className="text-white">"{activeTab === 'DATING_APP' ? targetInput.name : "la cible"}"</strong> localisé.
-              </p>
+      {/* ═══════════ RESULT ═══════════ */}
+      {screen === "RESULT" && (
+        <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 60px" }}>
+          <div style={{ maxWidth: 620, margin: "0 auto" }}>
+
+            {/* Verdict */}
+            <div className="fu" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 22, padding: "32px 28px", marginBottom: 16, textAlign: "center" }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 12 }}>Rapport d&apos;investigation — {new Date().toLocaleDateString("fr-FR")}</p>
+              <h2 style={{ fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, letterSpacing: "-.03em", marginBottom: 6 }}>1 profil actif détecté</h2>
+              <p style={{ color: "var(--t2)", fontSize: 14 }}>pour <strong style={{ color: "#fff" }}>{tab === "APP" ? input.name : "la cible analysée"}</strong></p>
             </div>
-            <div className="bg-[#0f0f0f] border border-white/10 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl">
-              <div className="p-6 md:p-12 space-y-8 md:space-y-12">
 
-                <div className="flex items-center justify-between bg-white/5 p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-white/5 shadow-inner">
-                  <div><p className="text-[9px] md:text-[10px] uppercase text-white/40 font-black tracking-widest mb-1">Score de certitude</p><p className="text-xl md:text-4xl font-black text-red-600 italic">CRITIQUE (94%)</p></div>
-                  <div className="w-10 h-10 md:w-16 md:h-16 rounded-full border-2 md:border-4 border-red-600 border-t-transparent animate-spin shrink-0"></div>
+            {/* Per-app */}
+            <div className="fu d1" style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              {APPS.map((app, i) => {
+                const found = appStatus[i] === "found";
+                return (
+                  <div key={i} style={{ background: found ? "rgba(220,38,38,.04)" : "var(--s1)", borderRadius: 16, padding: "16px 20px", border: `1px solid ${found ? "rgba(220,38,38,.2)" : "var(--bd)"}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 24 }}>{app.icon}</span>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: 14 }}>{app.name}</p>
+                        <p style={{ fontSize: 10, color: "var(--t3)" }}>{app.db} profils analysés</p>
+                      </div>
+                    </div>
+                    {found ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(220,38,38,.1)", padding: "7px 14px", borderRadius: 10 }}>
+                        {IC.alert({ s: 14, c: "var(--red)" })}
+                        <span style={{ fontSize: 12, fontWeight: 800, color: "var(--red)" }}>PROFIL ACTIF</span>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(34,197,94,.06)", padding: "7px 14px", borderRadius: 10 }}>
+                        {IC.checkCircle({ s: 14, c: "var(--green)" })}
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--green)" }}>Aucun profil</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* BLURRED PREVIEW */}
+            <div className="fu d2" style={{ background: "var(--s1)", borderRadius: 22, border: "1px solid rgba(220,38,38,.15)", overflow: "hidden", marginBottom: 16, position: "relative" }}>
+              <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at center,rgba(5,5,5,.6) 0%,rgba(5,5,5,.85) 100%)" }}>
+                <div style={{ background: "rgba(255,255,255,.06)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 20, padding: "28px 36px", textAlign: "center", border: "1px solid var(--bd2)" }}>
+                  {IC.lock({ s: 28, c: "var(--gold)" })}
+                  <p style={{ fontWeight: 800, fontSize: 16, marginTop: 12, marginBottom: 4 }}>Contenu verrouillé</p>
+                  <p style={{ fontSize: 12, color: "var(--t2)" }}>Débloquez le rapport complet pour 3,99€</p>
                 </div>
-
-                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-6">
-                  {[{ i: <ImageIcon size={20} />, t: "Photos récupérées", c: "text-blue-400", bg: "bg-blue-400/10" },
-                  { i: <Clock size={20} />, t: "Activité récente", c: "text-green-400", bg: "bg-green-400/10" },
-                  { i: <MapPin size={20} />, t: "Localisation GPS", c: "text-orange-400", bg: "bg-orange-400/10" },
-                  { i: <FileWarning size={20} />, t: "Contenu Bio", c: "text-purple-400", bg: "bg-purple-400/10" }].map((item, idx) => (
-                    <div key={idx} className="bg-white/5 p-4 md:p-6 rounded-xl md:rounded-[2rem] border border-white/5 flex items-center gap-3 md:gap-5">
-                      <div className={`w-10 h-10 md:w-14 md:h-14 ${item.bg} ${item.c} rounded-lg md:rounded-2xl flex items-center justify-center shrink-0`}>{item.i}</div>
-                      <span className="text-white font-black italic uppercase text-[9px] md:text-xs tracking-widest leading-tight">{item.t}</span>
+              </div>
+              <div style={{ padding: "28px 24px" }}>
+                <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+                  <div style={{ width: 90, height: 110, borderRadius: 14, background: "linear-gradient(135deg,#2a1a1a,#1a1a2a,#1a2a1a)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                    <div className="blur-heavy" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {IC.user({ s: 40, c: "rgba(255,255,255,.15)" })}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div className="blur-content" style={{ marginBottom: 8 }}>
+                      <p style={{ fontWeight: 800, fontSize: 20, marginBottom: 4 }}>Prénom, {fakeProfile.age}</p>
+                      <p style={{ fontSize: 12, color: "var(--t2)" }}>📍 {fakeProfile.city} · à {fakeProfile.km} km</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {fakeProfile.interests.slice(0, 3).map((tag, j) => (
+                        <span key={j} className="blur-content" style={{ fontSize: 10, padding: "4px 10px", borderRadius: 100, background: "rgba(255,255,255,.05)", border: "1px solid var(--bd)", color: "var(--t2)" }}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="blur-content" style={{ background: "rgba(255,255,255,.02)", borderRadius: 12, padding: "14px 16px", marginBottom: 16, border: "1px solid var(--bd)" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--t3)", marginBottom: 6 }}>Bio du profil</p>
+                  <p style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>{fakeProfile.bio}</p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {[
+                    { icon: IC.clock, label: "Dernière activité", val: `il y a ${fakeProfile.hrs}h`, blur: true },
+                    { icon: IC.image, label: "Photos de profil", val: `${fakeProfile.photos} photos`, blur: true },
+                    { icon: IC.mapPin, label: "Localisation", val: `${fakeProfile.city} (${fakeProfile.km}km)`, blur: true },
+                    { icon: IC.eye, label: "Statut du profil", val: "Actif — Visible", blur: false },
+                  ].map((m, i) => (
+                    <div key={i} style={{ background: "rgba(255,255,255,.02)", borderRadius: 12, padding: "12px 14px", border: "1px solid var(--bd)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        {m.icon({ s: 12, c: "var(--t3)" })}
+                        <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--t3)" }}>{m.label}</span>
+                      </div>
+                      <p className={m.blur ? "blur-content" : ""} style={{ fontSize: 13, fontWeight: 600, color: m.blur ? "var(--t1)" : "var(--red)" }}>{m.val}</p>
                     </div>
                   ))}
                 </div>
-
-                <div className="bg-gradient-to-br from-[#600] to-[#200] rounded-2xl md:rounded-[3rem] p-8 md:p-12 text-center border-2 border-red-600/30 relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-50 group-hover:translate-x-full duration-[3s] transition-transform"></div>
-                  <p className="text-[10px] md:text-xs text-yellow-400 font-black uppercase tracking-widest mb-6 md:mb-8 italic">Le dossier complet est prêt à être téléchargé</p>
-                  <div className="flex items-center justify-center gap-4 md:gap-6 mb-8 md:mb-10">
-                    <span className="text-6xl md:text-8xl font-black italic">3,99€</span>
-                    <div className="text-left"><p className="line-through text-white/30 text-lg md:text-2xl font-bold italic">19,99€</p><p className="text-[8px] md:text-[10px] bg-white text-red-900 px-2 md:px-3 py-1 rounded-sm md:rounded-full font-black uppercase shadow-xl mt-1 md:mt-2 tracking-tighter">Accès immédiat</p></div>
-                  </div>
-
-                  {/* LIEN STRIPE À PLACER ICI */}
-                  <button className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg md:text-2xl py-5 md:py-8 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase italic">
-                    TÉLÉCHARGER LE PDF
-                  </button>
-
-                  <p className="text-[8px] md:text-[10px] text-white/30 mt-6 md:mt-8 font-black uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center justify-center gap-2 italic"><ShieldCheck size={14} /> Paiement Anonyme • Libellé neutre</p>
-                </div>
               </div>
             </div>
-            <button onClick={() => setScanState('IDLE')} className="w-full text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/20 hover:text-white transition-colors mb-10 underline underline-offset-8 decoration-white/10">Détruire la session sécurisée</button>
+
+            {/* PAYWALL */}
+            <div className="fu d3" style={{ background: "linear-gradient(135deg,#100000,#180505)", borderRadius: 22, padding: "40px 28px", textAlign: "center", border: "1px solid rgba(220,38,38,.12)", marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--gold)", marginBottom: 18 }}>Rapport d&apos;investigation complet</p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 6 }}>
+                <span style={{ fontSize: "clamp(42px,10vw,64px)", fontWeight: 800, letterSpacing: "-.04em" }}>3,99€</span>
+                <div>
+                  <p style={{ textDecoration: "line-through", color: "var(--t3)", fontSize: 16, fontWeight: 700 }}>19,99€</p>
+                  <span style={{ background: "#fff", color: "var(--red-d)", fontSize: 9, fontWeight: 800, padding: "3px 7px", borderRadius: 4, textTransform: "uppercase" }}>-80%</span>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--t2)", marginBottom: 24, maxWidth: 380, margin: "0 auto 24px", lineHeight: 1.6 }}>
+                Photos du profil non floutées, bio complète, localisation précise, historique d&apos;activité et dernière connexion.
+              </p>
+              <button className="bg" style={{ width: "100%", padding: "20px", borderRadius: 16, fontSize: 17, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".02em", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                {IC.download({ s: 20 })} Télécharger le rapport PDF
+              </button>
+              <p style={{ fontSize: 10, color: "var(--t3)", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {IC.shield({ s: 11, c: "var(--t3)" })} Paiement anonyme · Libellé discret sur relevé
+              </p>
+            </div>
+
+            <button onClick={() => { setScreen("HOME"); setAppStatus(["wait", "wait", "wait"]); setScanLogs([]); setScanPct(0); }} style={{ display: "block", width: "100%", textAlign: "center", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", background: "none", border: "none", cursor: "pointer", padding: 14, textDecoration: "underline", textUnderlineOffset: 4 }}>
+              Nouvelle investigation
+            </button>
           </div>
         </div>
       )}
