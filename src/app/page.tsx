@@ -411,7 +411,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                             >
                               {prof.profile_pic_url ? (
-                                <img src={prof.profile_pic_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />
+                                <img src={`https://images.weserv.nl/?url=${encodeURIComponent(prof.profile_pic_url)}`} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />
                               ) : (
                                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 20, c: "#999" })}</div>
                               )}
@@ -432,7 +432,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                       {selectedInstaProfile && (
                         <div className="fi" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.2)", borderRadius: 14, padding: "14px 16px" }}>
                           {selectedInstaProfile.profile_pic_url ? (
-                            <img src={selectedInstaProfile.profile_pic_url} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />
+                            <img src={`https://images.weserv.nl/?url=${encodeURIComponent(selectedInstaProfile.profile_pic_url)}`} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />
                           ) : (
                             <div style={{ width: 50, height: 50, borderRadius: "50%", background: "#fff", border: "2px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 24, c: "#aaa" })}</div>
                           )}
