@@ -124,6 +124,7 @@ export default function CocuOuPas() {
 
   // Effect pour l'autocomplete Instagram
   useEffect(() => {
+    // Si la recherche est vide ou si on a déjà sélectionné le profil affiché
     if (!instaQuery.trim() || selectedInstaProfile?.username === instaQuery) {
       setInstaResults([]);
       setIsSearchingInsta(false);
@@ -135,21 +136,20 @@ export default function CocuOuPas() {
       try {
         const res = await fetch(`/api/insta-search?query=${encodeURIComponent(instaQuery)}`);
         const data = await res.json();
-        let results: InstaProfile[] = [];
 
-        // S'adapte au format de réponse de l'API RapidAPI
-        if (Array.isArray(data)) results = data;
-        else if (data && Array.isArray(data.users)) results = data.users.map((u: any) => u.user || u);
-        else if (data && Array.isArray(data.data)) results = data.data;
-
-        setInstaResults(results.slice(0, 5)); // On garde les 5 meilleurs résultats
+        // On s'attend à recevoir un tableau propre grâce au nouveau route.ts
+        if (Array.isArray(data)) {
+          setInstaResults(data.slice(0, 5));
+        } else {
+          setInstaResults([]);
+        }
       } catch (err) {
         console.error(err);
         setInstaResults([]);
       } finally {
         setIsSearchingInsta(false);
       }
-    }, 600); // 600ms de délai pour ne pas surcharger l'API
+    }, 600);
 
     return () => clearTimeout(timeoutId);
   }, [instaQuery, selectedInstaProfile]);
@@ -178,7 +178,7 @@ export default function CocuOuPas() {
 
   /* ════════ SCAN ENGINE ════════ */
   const startScan = () => {
-    if (tab === "APP" && !instaQuery.trim()) return alert("Veuillez renseigner un profil Instagram.");
+    if (tab === "APP" && !selectedInstaProfile) return alert("Veuillez sélectionner un profil Instagram valide dans la liste.");
     if (tab === "FACE" && !photos.length) return alert("Uploadez au moins 1 photo.");
 
     setScreen("SCAN"); setScanLogs([]); setAppStatus(["wait", "wait", "wait"]); setScanPhase("INIT"); setScanPct(0); setElapsed(0); scrollTop();
@@ -271,6 +271,8 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
 .progress-bar{background-size:40px 40px;background-image:repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,.03) 8px,rgba(255,255,255,.03) 16px);animation:progressStripe 1s linear infinite}
 .dots span{display:inline-block;animation:dotPulse 1.4s infinite}.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
 .ch{transition:all .25s}.ch:hover{border-color:rgba(255,255,255,.12)!important;transform:translateY(-2px)}
+.btn-disabled {background: #333; color: #777; cursor: not-allowed; border: 1px solid #444;}
+.btn-disabled:hover {filter: none; transform: none;}
   `;
 
   const SH: React.FC<{ title: string; sub?: string; tag?: string }> = ({ title, sub, tag }) => (
@@ -379,6 +381,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                           value={instaQuery}
                           onChange={e => {
                             setInstaQuery(e.target.value);
+                            // Si on tape un nouveau truc, ça annule la cible verrouillée
                             if (selectedInstaProfile) setSelectedInstaProfile(null);
                           }}
                           placeholder="Chercher un compte Instagram (ex: lea_martin)..."
@@ -392,12 +395,13 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                       </div>
 
                       {/* DROPDOWN (AUTOCOMPLETE) */}
-                      {instaResults.length > 0 && (
+                      {instaResults.length > 0 && !selectedInstaProfile && (
                         <div className="fi" style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", borderRadius: 14, marginTop: 8, boxShadow: "0 14px 40px rgba(0,0,0,.15)", border: "1px solid #eaeaea", zIndex: 50, overflow: "hidden" }}>
                           {instaResults.map((prof, i) => (
                             <div
                               key={i}
                               onClick={() => {
+                                // Quand on clique, on verrouille le profil !
                                 setSelectedInstaProfile(prof);
                                 setInstaQuery(prof.username);
                                 setInstaResults([]);
@@ -406,7 +410,12 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                               onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                             >
-                              <img src={prof.profile_pic_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />
+                              {prof.profile_pic_url ? (
+                                <img src={prof.profile_pic_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />
+                              ) : (
+                                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 20, c: "#999" })}</div>
+                              )}
+
                               <div>
                                 <p style={{ fontSize: 14, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>
                                   {prof.username}
@@ -422,7 +431,11 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                       {/* CIBLE VERROUILLÉE */}
                       {selectedInstaProfile && (
                         <div className="fi" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.2)", borderRadius: 14, padding: "14px 16px" }}>
-                          <img src={selectedInstaProfile.profile_pic_url} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />
+                          {selectedInstaProfile.profile_pic_url ? (
+                            <img src={selectedInstaProfile.profile_pic_url} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />
+                          ) : (
+                            <div style={{ width: 50, height: 50, borderRadius: "50%", background: "#fff", border: "2px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 24, c: "#aaa" })}</div>
+                          )}
                           <div style={{ flex: 1 }}>
                             <p style={{ fontSize: 10, fontWeight: 800, color: "#22c55e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 3 }}>Cible verrouillée par l'IA</p>
                             <p style={{ fontSize: 15, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>
@@ -448,8 +461,13 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                   </div>
                 )}
 
-                <button onClick={startScan} className="bp" style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  Lancer l&apos;investigation {IC.arrowRight({ s: 18 })}
+                {/* BOUTON D'INVESTIGATION DYNAMIQUE */}
+                <button
+                  onClick={startScan}
+                  disabled={tab === "APP" && !selectedInstaProfile}
+                  className={tab === "APP" && !selectedInstaProfile ? "btn-disabled" : "bp"}
+                  style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.3s ease" }}>
+                  {tab === "APP" && !selectedInstaProfile ? "Sélectionnez un profil" : "Lancer l'investigation"} {tab === "APP" && !selectedInstaProfile ? null : IC.arrowRight({ s: 18 })}
                 </button>
                 <p style={{ textAlign: "center", fontSize: 11, color: "#999", marginTop: 14 }}>🔒 Recherche anonyme · Aucune notification envoyée</p>
               </div>
