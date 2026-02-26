@@ -14,6 +14,13 @@ interface FakeProfile { city: string; hrs: number; km: number; age: number; phot
 interface IconProps { d: string | string[]; s?: number; c?: string; f?: string;[key: string]: unknown; }
 type IconFn = (props?: Partial<IconProps>) => React.ReactElement;
 
+interface InstaProfile {
+  username: string;
+  full_name: string;
+  profile_pic_url: string;
+  is_verified?: boolean;
+}
+
 /* ══════════════ DATA ══════════════ */
 const CITIES: string[] = ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Montpellier", "Strasbourg", "Bordeaux", "Lille", "Rennes", "Grenoble"];
 const APPS: AppData[] = [
@@ -84,7 +91,13 @@ const Dots: React.FC = () => <span className="dots"><span>.</span><span>.</span>
 /* ═══════════ MAIN ═══════════ */
 export default function CocuOuPas() {
   const [tab, setTab] = useState<Tab>("APP");
-  const [input, setInput] = useState({ name: "", username: "", dob: "" });
+
+  // Nouveaux états pour la recherche Instagram
+  const [instaQuery, setInstaQuery] = useState("");
+  const [instaResults, setInstaResults] = useState<InstaProfile[]>([]);
+  const [isSearchingInsta, setIsSearchingInsta] = useState(false);
+  const [selectedInstaProfile, setSelectedInstaProfile] = useState<InstaProfile | null>(null);
+
   const [photos, setPhotos] = useState<string[]>([]);
   const [screen, setScreen] = useState<Screen>("HOME");
   const [liveCount, setLiveCount] = useState(47);
@@ -109,6 +122,39 @@ export default function CocuOuPas() {
     };
   }, []);
 
+  // Effect pour l'autocomplete Instagram
+  useEffect(() => {
+    if (!instaQuery.trim() || selectedInstaProfile?.username === instaQuery) {
+      setInstaResults([]);
+      setIsSearchingInsta(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setIsSearchingInsta(true);
+      try {
+        const res = await fetch(`/api/insta-search?query=${encodeURIComponent(instaQuery)}`);
+        const data = await res.json();
+        let results: InstaProfile[] = [];
+
+        // S'adapte au format de réponse de l'API RapidAPI
+        if (Array.isArray(data)) results = data;
+        else if (data && Array.isArray(data.users)) results = data.users.map((u: any) => u.user || u);
+        else if (data && Array.isArray(data.data)) results = data.data;
+
+        setInstaResults(results.slice(0, 5)); // On garde les 5 meilleurs résultats
+      } catch (err) {
+        console.error(err);
+        setInstaResults([]);
+      } finally {
+        setIsSearchingInsta(false);
+      }
+    }, 600); // 600ms de délai pour ne pas surcharger l'API
+
+    return () => clearTimeout(timeoutId);
+  }, [instaQuery, selectedInstaProfile]);
+
+
   useEffect(() => { if (screen === "SCAN") termRef.current?.scrollIntoView({ behavior: "smooth" }); }, [scanLogs, screen]);
   useEffect(() => {
     if (screen === "SCAN" && scanPhase !== "DONE") { startTime.current = Date.now(); timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 200); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }
@@ -124,16 +170,19 @@ export default function CocuOuPas() {
     const t3 = setTimeout(fire, 6000); const t4 = setInterval(fire, 30000);
     return () => { clearInterval(t1); clearInterval(t2); clearTimeout(t3); clearInterval(t4); };
   }, []);
+
   const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) setPhotos(p => [...p, ...Array.from(e.target.files!).map(f => URL.createObjectURL(f))].slice(0, 3)); };
   const ts = (): string => new Date().toLocaleTimeString("fr-FR", { hour12: false });
   const addLog = (text: string, type: LogType = "info") => setScanLogs(p => [...p, { time: ts(), text, type }]);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  /* ════════ SCAN ENGINE (inchangé) ════════ */
+  /* ════════ SCAN ENGINE ════════ */
   const startScan = () => {
-    if (tab === "APP" && !input.name.trim()) return alert("Renseignez au moins le nom.");
+    if (tab === "APP" && !instaQuery.trim()) return alert("Veuillez renseigner un profil Instagram.");
     if (tab === "FACE" && !photos.length) return alert("Uploadez au moins 1 photo.");
+
     setScreen("SCAN"); setScanLogs([]); setAppStatus(["wait", "wait", "wait"]); setScanPhase("INIT"); setScanPct(0); setElapsed(0); scrollTop();
+
     let t = 0; const sched = (d: number, fn: () => void) => { t += d; setTimeout(fn, t); };
     sched(500, () => { setScanPhase("CONNECT"); addLog("Initialisation du protocole d'investigation…"); });
     sched(1200, () => { addLog("Établissement d'une connexion chiffrée (TLS 1.3)…"); setScanPct(2); });
@@ -313,20 +362,78 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
             {/* SEARCH CARD */}
             <div className="fu d4" style={{ background: "#fff", borderRadius: 24, maxWidth: 660, margin: "0 auto", overflow: "hidden", boxShadow: "0 40px 100px -25px rgba(0,0,0,.85)" }}>
               <div style={{ display: "flex", borderBottom: "2px solid #f0f0f0" }}>
-                {([{ id: "APP" as Tab, label: "Par identité", icon: IC.search }, { id: "FACE" as Tab, label: "Par photo (IA)", icon: IC.camera }]).map(t => (
+                {([{ id: "APP" as Tab, label: "Par profil Instagram", icon: IC.at }, { id: "FACE" as Tab, label: "Par photo (IA)", icon: IC.camera }]).map(t => (
                   <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "15px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", background: tab === t.id ? "#fff" : "#fafafa", color: tab === t.id ? "var(--red)" : "#b0b0b0", borderBottom: tab === t.id ? "3px solid var(--red)" : "3px solid transparent", transition: "all .2s" }}>{t.icon({ s: 15 })} {t.label}</button>
                 ))}
               </div>
+
               <div style={{ padding: "28px 28px 24px", color: "#111" }}>
                 {tab === "APP" ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ position: "relative" }}><div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.user({ s: 17 })}</div>
-                      <input value={input.name} onChange={e => setInput({ ...input, name: e.target.value })} placeholder="Nom et Prénom *" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} /></div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <div style={{ position: "relative", flex: 1 }}><div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.at({ s: 17 })}</div>
-                        <input value={input.username} onChange={e => setInput({ ...input, username: e.target.value })} placeholder="Pseudo Instagram" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} /></div>
-                      <div style={{ position: "relative", flex: 1 }}><div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.calendar({ s: 17 })}</div>
-                        <input value={input.dob} onChange={e => setInput({ ...input, dob: e.target.value })} placeholder="Date de naissance" style={{ width: "100%", padding: "14px 14px 14px 44px", borderRadius: 12, border: "2px solid #f0f0f0", fontSize: 14, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} /></div>
+                    <div style={{ position: "relative" }}>
+
+                      {/* BARRE DE RECHERCHE INTELLIGENTE */}
+                      <div style={{ position: "relative", zIndex: 10 }}>
+                        <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "#ccc" }}>{IC.search({ s: 18 })}</div>
+                        <input
+                          value={instaQuery}
+                          onChange={e => {
+                            setInstaQuery(e.target.value);
+                            if (selectedInstaProfile) setSelectedInstaProfile(null);
+                          }}
+                          placeholder="Chercher un compte Instagram (ex: lea_martin)..."
+                          style={{ width: "100%", padding: "16px 16px 16px 46px", borderRadius: 14, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fff", color: "#111", transition: "all .2s", boxShadow: "0 4px 12px rgba(0,0,0,.03)" }}
+                        />
+                        {isSearchingInsta && (
+                          <div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)" }}>
+                            <div style={{ width: 18, height: 18, border: "2px solid #eee", borderTopColor: "var(--red)", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* DROPDOWN (AUTOCOMPLETE) */}
+                      {instaResults.length > 0 && (
+                        <div className="fi" style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", borderRadius: 14, marginTop: 8, boxShadow: "0 14px 40px rgba(0,0,0,.15)", border: "1px solid #eaeaea", zIndex: 50, overflow: "hidden" }}>
+                          {instaResults.map((prof, i) => (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                setSelectedInstaProfile(prof);
+                                setInstaQuery(prof.username);
+                                setInstaResults([]);
+                              }}
+                              style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", cursor: "pointer", borderBottom: i === instaResults.length - 1 ? "none" : "1px solid #f5f5f5", transition: "background .15s" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              <img src={prof.profile_pic_url} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />
+                              <div>
+                                <p style={{ fontSize: 14, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>
+                                  {prof.username}
+                                  {prof.is_verified && <span style={{ color: "#3b82f6", fontSize: 12 }}>✓</span>}
+                                </p>
+                                <p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{prof.full_name}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CIBLE VERROUILLÉE */}
+                      {selectedInstaProfile && (
+                        <div className="fi" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.2)", borderRadius: 14, padding: "14px 16px" }}>
+                          <img src={selectedInstaProfile.profile_pic_url} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 10, fontWeight: 800, color: "#22c55e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 3 }}>Cible verrouillée par l'IA</p>
+                            <p style={{ fontSize: 15, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>
+                              @{selectedInstaProfile.username}
+                              {selectedInstaProfile.is_verified && <span style={{ color: "#3b82f6", fontSize: 12 }}>✓</span>}
+                            </p>
+                          </div>
+                          <div style={{ color: "#22c55e" }}>{IC.checkCircle({ s: 24 })}</div>
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 ) : (
@@ -340,6 +447,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
                     {photos.length > 0 && (<div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 14 }}>{photos.map((p, i) => (<div key={i} style={{ position: "relative", width: 60, height: 60, borderRadius: 10, overflow: "hidden", border: "2px solid #e5e5e5" }}><img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /><button onClick={() => setPhotos(x => x.filter((_, j) => j !== i))} style={{ position: "absolute", top: 3, right: 3, background: "rgba(0,0,0,.6)", border: "none", borderRadius: "50%", padding: 2, cursor: "pointer", display: "flex" }}>{IC.x({ s: 10, c: "#fff" })}</button></div>))}</div>)}
                   </div>
                 )}
+
                 <button onClick={startScan} className="bp" style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   Lancer l&apos;investigation {IC.arrowRight({ s: 18 })}
                 </button>
@@ -413,7 +521,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
             <SH tag="Méthode" title="Trois étapes. 60 secondes. Zéro trace." sub="Notre technologie d'investigation numérique analyse les 3 plus grandes apps de rencontre en France." />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18 }}>
               {[
-                { n: "01", title: "Renseignez la cible", desc: "Entrez un nom et un pseudo Instagram, ou uploadez directement une photo. Plus vous donnez d'informations, plus l'analyse sera précise.", icon: IC.user },
+                { n: "01", title: "Renseignez la cible", desc: "Cherchez un compte Instagram avec notre IA ou uploadez directement une photo. Plus vous donnez d'informations, plus l'analyse sera précise.", icon: IC.user },
                 { n: "02", title: "L'IA scanne en temps réel", desc: "Notre moteur FaceTrace v4 analyse simultanément Tinder, Bumble et Hinge via un réseau de proxys résidentiels. 100% invisible et intraçable.", icon: IC.globe },
                 { n: "03", title: "Recevez un rapport complet", desc: "Verdict clair par application. Si un profil est trouvé : captures d'écran, bio, centres d'intérêt, localisation GPS et dernière activité dans un PDF chiffré.", icon: IC.fileText },
               ].map((h, i) => (
@@ -589,7 +697,7 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
         </div>
       )}
 
-      {/* ═══════════ SCAN (inchangé) ═══════════ */}
+      {/* ═══════════ SCAN ═══════════ */}
       {screen === "SCAN" && (
         <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 40px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: "100%", maxWidth: 720 }}>
@@ -597,7 +705,11 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,38,38,.08)", border: "1px solid rgba(220,38,38,.15)", borderRadius: 100, padding: "6px 16px", marginBottom: 16, fontSize: 11, fontWeight: 700, color: "var(--red)" }}>
                 <span className="pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />Investigation en cours — {formatTime(elapsed)}
               </div>
-              <h2 style={{ fontSize: "clamp(18px,3vw,26px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>Analyse de <span style={{ color: "var(--red)", textDecoration: "underline", textUnderlineOffset: 4, textDecorationColor: "rgba(220,38,38,.3)" }}>{tab === "APP" ? input.name : "reconnaissance faciale"}</span></h2>
+              <h2 style={{ fontSize: "clamp(18px,3vw,26px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>
+                Analyse de <span style={{ color: "var(--red)", textDecoration: "underline", textUnderlineOffset: 4, textDecorationColor: "rgba(220,38,38,.3)" }}>
+                  {tab === "APP" ? (selectedInstaProfile ? "@" + selectedInstaProfile.username : instaQuery) : "reconnaissance faciale"}
+                </span>
+              </h2>
               <p style={{ fontSize: 13, color: "var(--t3)" }}>Scan simultané de 3 bases de données — Ne fermez pas cette page</p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
@@ -628,14 +740,16 @@ input:focus{outline:none;border-color:var(--red)!important;background:rgba(255,2
         </div>
       )}
 
-      {/* ═══════════ RESULT (inchangé) ═══════════ */}
+      {/* ═══════════ RESULT ═══════════ */}
       {screen === "RESULT" && (
         <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 60px" }}>
           <div style={{ maxWidth: 620, margin: "0 auto" }}>
             <div className="fu" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 22, padding: "32px 28px", marginBottom: 16, textAlign: "center" }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 12 }}>Rapport d&apos;investigation — {new Date().toLocaleDateString("fr-FR")}</p>
               <h2 style={{ fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, letterSpacing: "-.03em", marginBottom: 6 }}>1 profil actif détecté</h2>
-              <p style={{ color: "var(--t2)", fontSize: 14 }}>pour <strong style={{ color: "#fff" }}>{tab === "APP" ? input.name : "la cible analysée"}</strong></p>
+              <p style={{ color: "var(--t2)", fontSize: 14 }}>
+                pour <strong style={{ color: "#fff" }}>{tab === "APP" ? (selectedInstaProfile ? "@" + selectedInstaProfile.username : instaQuery) : "la cible analysée"}</strong>
+              </p>
             </div>
             <div className="fu d1" style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {APPS.map((app, i) => {
