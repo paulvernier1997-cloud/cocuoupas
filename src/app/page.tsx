@@ -602,7 +602,7 @@ input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: f.ok ? "var(--t2)" : "var(--t4)" }}>{f.ok ? IC.check({ s: 14, c: "var(--green)" }) : IC.x({ s: 14, c: "var(--t4)" })}{f.t}</div>
                   ))}
                 </div>
-                <button className="bo" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800 }}>Débloquer — 3,99€</button>
+                <a href="https://buy.stripe.com/5kQbJ2bVfgyhbdOau94Vy1F" target="_blank" rel="noopener noreferrer" style={{ width: "100%", textDecoration: "none" }}><button className="bo" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800 }}>Débloquer — 3,99€</button></a>
               </div>
               {/* Intégral */}
               <div className="tier-pop" style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column" }}>
@@ -613,7 +613,7 @@ input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--t2)" }}>{IC.check({ s: 14, c: "var(--gold)" })}{f.t}</div>
                   ))}
                 </div>
-                <button className="bg" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer — 9,99€</button>
+                <a href="https://buy.stripe.com/00w28scZj2Hreq09q54Vy1G" target="_blank" rel="noopener noreferrer" style={{ width: "100%", textDecoration: "none" }}><button className="bg" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer — 9,99€</button></a>
               </div>
             </div>
 
