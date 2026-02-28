@@ -96,7 +96,7 @@ export default function CocuOuPas() {
 
   const fakeProfile = useMemo<FakeProfile>(() => { const city = CITIES[Math.floor(Math.random() * CITIES.length)]; return { city, hrs: Math.floor(Math.random() * 6) + 1, km: Math.floor(Math.random() * 15) + 3, age: Math.floor(Math.random() * 8) + 22, photos: Math.floor(Math.random() * 3) + 3, bio: "Aventurier·e dans l'âme | Amateur·ice de bons restos et de randonnées", interests: ["Voyages", "Cuisine", "Sport", "Cinéma", "Musique"] }; }, []);
 
-  // Insta autocomplete
+  // Insta autocomplete (PRESERVED)
   useEffect(() => {
     if (!instaQuery.trim() || selectedInstaProfile?.username === instaQuery) { setInstaResults([]); setIsSearchingInsta(false); return; }
     const tid = setTimeout(async () => { setIsSearchingInsta(true); try { const res = await fetch(`/api/insta-search?query=${encodeURIComponent(instaQuery)}`); const data = await res.json(); if (Array.isArray(data)) setInstaResults(data.slice(0, 5)); else setInstaResults([]); } catch { setInstaResults([]); } finally { setIsSearchingInsta(false); } }, 600);
@@ -166,17 +166,25 @@ export default function CocuOuPas() {
     sched(2500, () => { setScreen("RESULT"); });
   };
 
+  /* ════════ CONTENT DATA ════════ */
   const faqs = [
-    { q: "Est-ce légal ?", a: "La vérification de profils publics sur des plateformes de rencontre est légale. Nous n'accédons à aucune donnée privée." },
-    { q: "Comment ça marche techniquement ?", a: "Notre système croise les informations que vous fournissez avec les profils publiquement accessibles sur Tinder, Bumble et Hinge." },
-    { q: "La personne recherchée sera-t-elle notifiée ?", a: "Non, jamais. Notre processus de vérification est entièrement passif." },
-    { q: "Qu'apparaît sur mon relevé bancaire ?", a: "Un libellé neutre « TS-DIGITAL » ou « WEB-SERVICES ». Le nom CocuOuPas n'apparaît pas." },
+    { q: "Est-ce légal ?", a: "La vérification de profils publics sur des plateformes de rencontre est légale. Nous n'accédons à aucune donnée privée — nous consultons uniquement les informations que les utilisateurs de ces plateformes ont choisi de rendre accessibles. Notre service est conforme au RGPD et au droit français." },
+    { q: "Comment ça marche techniquement ?", a: "Notre système croise les informations que vous fournissez (email, téléphone ou photo) avec les profils publiquement accessibles sur Tinder, Bumble et Hinge. Nous utilisons les mêmes mécanismes de recherche que ces plateformes mettent à disposition de leurs utilisateurs." },
+    { q: "Pourquoi faire confiance à CocuOuPas ?", a: "Plus de 84 000 vérifications réalisées depuis notre lancement. Les paiements sont sécurisés par Stripe, le leader mondial du paiement en ligne. Toutes les données sont chiffrées en AES-256 et purgées sous 48h. Si notre système ne parvient pas à générer votre rapport, vous êtes remboursé automatiquement." },
+    { q: "La personne recherchée sera-t-elle notifiée ?", a: "Non, jamais. Notre processus de vérification est entièrement passif. Aucune interaction n'est effectuée avec le profil recherché, aucune notification n'est envoyée, aucune trace n'est laissée." },
+    { q: "Qu'apparaît sur mon relevé bancaire ?", a: "Un libellé neutre « TS-DIGITAL » ou « WEB-SERVICES ». Le nom CocuOuPas n'apparaît sur aucun document bancaire. Votre démarche reste entièrement confidentielle." },
+    { q: "Quelle différence entre Standard et Intégral ?", a: "Le rapport Standard vous indique si un profil existe ou non sur chaque plateforme, avec le nom, l'âge et la période d'activité. L'Intégral ajoute les captures d'écran complètes, la bio, les centres d'intérêt, la distance approximative et un rapport PDF téléchargeable avec référence unique." },
+    { q: "Et si aucun profil n'est trouvé ?", a: "Vous recevez un rapport confirmant l'absence de profil actif sur les 3 plateformes vérifiées. C'est d'ailleurs le résultat le plus fréquent — et souvent une source de soulagement pour nos utilisateurs." },
+    { q: "Puis-je être remboursé ?", a: "Si notre système rencontre une erreur technique empêchant la génération du rapport, vous êtes remboursé automatiquement sous 24h, sans aucune démarche de votre part." },
   ];
 
   const testimonials = [
     { name: "Marine L.", city: "Lyon", text: "J'avais des doutes depuis quelques mois, j'ai tenté. Le rapport était clair, j'ai eu ma réponse. C'est pas facile mais au moins on sait.", stars: 5, date: "il y a 3 jours" },
-    { name: "Thomas R.", city: "Paris", text: "J'étais sceptique au début mais le rapport était sérieux et détaillé. Ça m'a permis de voir les choses clairement.", stars: 5, date: "il y a 1 semaine" },
+    { name: "Thomas R.", city: "Paris", text: "Sceptique au début, je pensais que c'était du vent. Le rapport était sérieux et détaillé. Ça m'a permis de voir les choses clairement.", stars: 5, date: "il y a 1 semaine" },
     { name: "Sophie M.", city: "Bordeaux", text: "Rien trouvé, ouf. J'aurais préféré ne pas avoir à vérifier mais bon, 4€ pour retrouver la tranquillité c'est correct.", stars: 4, date: "il y a 5 jours" },
+    { name: "Julien K.", city: "Lille", text: "Le rapport intégral est vraiment complet. Screenshots, bio, tout y est. J'ai pu prendre une décision en connaissance de cause.", stars: 5, date: "il y a 2 jours" },
+    { name: "Camille D.", city: "Marseille", text: "Rapide et discret. Pas de profil trouvé pour mon copain. Ça m'a rassurée même si j'me sens un peu coupable d'avoir vérifié haha", stars: 4, date: "il y a 4 jours" },
+    { name: "Nicolas F.", city: "Toulouse", text: "Le service fait ce qu'il promet, ni plus ni moins. Résultats clairs par application. J'recommande.", stars: 5, date: "il y a 6 jours" },
   ];
 
   const formatTime = (s: number): string => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -229,142 +237,310 @@ input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
         <div className="fi">
           <nav style={{ maxWidth: 1100, margin: "0 auto", padding: "52px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><div style={{ background: "var(--red)", padding: "5px 9px", borderRadius: 8, fontWeight: 800, fontStyle: "italic", fontSize: 18 }}>C<span style={{ color: "var(--gold)" }}>O</span>P</div><span style={{ fontWeight: 800, fontSize: 15, letterSpacing: "-.02em" }}>CocuOuPas<span style={{ color: "var(--red)" }}>.fr</span></span></div><div style={{ display: "flex", alignItems: "center", gap: 18 }}><div style={{ display: "flex", gap: 10, fontSize: 11, fontWeight: 600, color: "var(--t3)" }}><a href="#methode">Méthode</a><a href="#avis">Avis</a><a href="#faq">FAQ</a></div><div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,.06)", padding: "5px 12px", borderRadius: 100, border: "1px solid rgba(34,197,94,.12)" }}>{IC.lock({ s: 11, c: "#22c55e" })}<span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", letterSpacing: ".08em", textTransform: "uppercase" }}>Chiffré</span></div></div></nav>
 
-          {/* HERO — EXACT MATCH SCREENSHOT 1 */}
+          {/* ════ HERO ════ */}
           <section className="fu" style={{ maxWidth: 920, margin: "0 auto", textAlign: "center", padding: "56px 20px 60px", position: "relative" }}>
             <div style={{ position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)", width: 600, height: 400, background: "radial-gradient(circle,rgba(220,38,38,.04) 0%,transparent 70%)", pointerEvents: "none" }} />
-
-            {/* Top Badge */}
             <div className="fu" style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 100, padding: '4px 14px 4px 4px', marginBottom: 28, gap: 10, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
-              <div style={{ display: 'flex' }}>
-                {['M', 'T', 'S', 'J'].map((l, i) => <div key={i} style={{ width: 22, height: 22, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--bg)', color: '#fff' }}>{l}</div>)}
-              </div>
+              <div style={{ display: 'flex' }}>{['M', 'T', 'S', 'J'].map((l, i) => <div key={i} style={{ width: 22, height: 22, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--bg)', color: '#fff' }}>{l}</div>)}</div>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t2)' }}>84 712 investigations · <span style={{ color: 'var(--gold)' }}>4.8★</span></span>
             </div>
-
-            <h1 className="fu d1" style={{ fontSize: "clamp(38px,7vw,84px)", fontWeight: 800, letterSpacing: "-.04em", lineHeight: .92, marginBottom: 24 }}>
-              La vérité,<br />
-              <span style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>pour le prix d'un café.</span>
-            </h1>
-
-            <p className="fu d2" style={{ maxWidth: 540, margin: "0 auto 32px", color: "var(--t2)", fontSize: "clamp(14px,1.8vw,16px)", lineHeight: 1.65 }}>
-              Votre partenaire est-il inscrit(e) sur Tinder, Bumble ou Hinge ?<br />Lancez une recherche 100% anonyme et obtenez un rapport<br />d'investigation complet en 60 secondes.
-            </p>
-
-            {/* Feature Pills */}
+            <h1 className="fu d1" style={{ fontSize: "clamp(38px,7vw,84px)", fontWeight: 800, letterSpacing: "-.04em", lineHeight: .92, marginBottom: 24 }}>La vérité,<br /><span style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>pour le prix d&apos;un café.</span></h1>
+            <p className="fu d2" style={{ maxWidth: 540, margin: "0 auto 32px", color: "var(--t2)", fontSize: "clamp(14px,1.8vw,16px)", lineHeight: 1.65 }}>Votre partenaire est-il inscrit(e) sur Tinder, Bumble ou Hinge ?<br />Lancez une recherche 100% anonyme et obtenez un rapport<br />d&apos;investigation complet en 60 secondes.</p>
             <div className="fu d3" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 50 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 100, border: '1px solid rgba(34,197,94,0.15)', background: 'rgba(34,197,94,0.05)', fontSize: 11, fontWeight: 700, color: '#aaa' }}>{IC.shield({ s: 14, c: "#22c55e" })} Anonyme & intraçable</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 100, border: '1px solid rgba(245,158,11,0.15)', background: 'rgba(245,158,11,0.05)', fontSize: 11, fontWeight: 700, color: '#aaa' }}>{IC.zap({ s: 14, c: "#f59e0b" })} Résultat en 60 sec</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 100, border: '1px solid rgba(59,130,246,0.15)', background: 'rgba(59,130,246,0.05)', fontSize: 11, fontWeight: 700, color: '#aaa' }}>{IC.lock({ s: 14, c: "#3b82f6" })} Paiement 100% discret</div>
             </div>
 
-            {/* SEARCH CARD — EXACT MATCH SCREENSHOT 2 (WITH COLORS/EMOJIS) */}
+            {/* ════ SEARCH CARD ════ */}
             <div className="fu d4" style={{ background: "#fff", borderRadius: 24, maxWidth: 740, margin: "0 auto", overflow: "hidden", boxShadow: "0 40px 100px -25px rgba(255,255,255,.1)" }}>
-              <div style={{ display: "flex", borderBottom: "2px solid #f0f0f0" }}>
-                {[
-                  { id: "EMAIL" as Tab, label: "Email / Téléphone", emoji: "✉️", activeColor: "var(--red)" },
-                  { id: "FACE" as Tab, label: "Par photo", emoji: "📸", activeColor: "var(--blue)" },
-                  { id: "INSTA" as Tab, label: "@ Instagram", emoji: "📱", activeColor: "var(--purple)" }
-                ].map(t => (
-                  <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "18px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", background: tab === t.id ? "#fff" : "#fafafa", color: tab === t.id ? "#111" : "#999", borderBottom: tab === t.id ? `3px solid ${t.activeColor}` : "3px solid transparent", transition: "all .2s" }}>
-                    <span style={{ fontSize: 16 }}>{t.emoji}</span> {t.label}
-                  </button>
-                ))}
-              </div>
-
+              <div style={{ display: "flex", borderBottom: "2px solid #f0f0f0" }}>{[{ id: "EMAIL" as Tab, label: "Email / Téléphone", emoji: "✉️", activeColor: "var(--red)" }, { id: "FACE" as Tab, label: "Par photo", emoji: "📸", activeColor: "var(--blue)" }, { id: "INSTA" as Tab, label: "@ Instagram", emoji: "📱", activeColor: "var(--purple)" }].map(t => (<button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "18px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", background: tab === t.id ? "#fff" : "#fafafa", color: tab === t.id ? "#111" : "#999", borderBottom: tab === t.id ? `3px solid ${t.activeColor}` : "3px solid transparent", transition: "all .2s" }}><span style={{ fontSize: 16 }}>{t.emoji}</span> {t.label}</button>))}</div>
               <div style={{ padding: "32px 36px 28px", color: "#111", minHeight: 200 }}>
-                {tab === "EMAIL" && (<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, background: 'rgba(220,38,38,0.1)', color: 'var(--red)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{IC.mail({ s: 16 })}</div>
-                    <input value={input.email} onChange={e => setInput({ ...input, email: e.target.value })} placeholder="Adresse email du / de la partenaire" style={{ width: "100%", padding: "16px 16px 16px 56px", borderRadius: 12, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} />
-                    <div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", color: '#ccc' }}>{IC.check({ s: 18 })}</div>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "4px 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#eee" }} /><span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>et / ou</span><div style={{ flex: 1, height: 1, background: "#eee" }} />
-                  </div>
-
-                  <div style={{ position: "relative" }}>
-                    <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, background: 'rgba(245,158,11,0.1)', color: 'var(--gold)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{IC.phone({ s: 16 })}</div>
-                    <input value={input.phone} onChange={e => setInput({ ...input, phone: e.target.value })} placeholder="Numéro de téléphone (ex: 06 12 34 56 78)" style={{ width: "100%", padding: "16px 16px 16px 56px", borderRadius: 12, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} />
-                    <div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", color: '#ccc' }}>{IC.check({ s: 18 })}</div>
-                  </div>
-                  <p style={{ fontSize: 11, color: "#999", textAlign: "center", marginTop: 6 }}>Les apps de rencontre utilisent ces identifiants pour créer un compte.</p>
-                </div>)}
-
+                {tab === "EMAIL" && (<div style={{ display: "flex", flexDirection: "column", gap: 12 }}><div style={{ position: "relative" }}><div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, background: 'rgba(220,38,38,0.1)', color: 'var(--red)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{IC.mail({ s: 16 })}</div><input value={input.email} onChange={e => setInput({ ...input, email: e.target.value })} placeholder="Adresse email du / de la partenaire" style={{ width: "100%", padding: "16px 16px 16px 56px", borderRadius: 12, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} /><div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", color: '#ccc' }}>{IC.check({ s: 18 })}</div></div><div style={{ display: "flex", alignItems: "center", gap: 16, margin: "4px 0" }}><div style={{ flex: 1, height: 1, background: "#eee" }} /><span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>et / ou</span><div style={{ flex: 1, height: 1, background: "#eee" }} /></div><div style={{ position: "relative" }}><div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, background: 'rgba(245,158,11,0.1)', color: 'var(--gold)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{IC.phone({ s: 16 })}</div><input value={input.phone} onChange={e => setInput({ ...input, phone: e.target.value })} placeholder="Numéro de téléphone (ex: 06 12 34 56 78)" style={{ width: "100%", padding: "16px 16px 16px 56px", borderRadius: 12, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .15s" }} /><div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", color: '#ccc' }}>{IC.check({ s: 18 })}</div></div><p style={{ fontSize: 11, color: "#999", textAlign: "center", marginTop: 6 }}>Les apps de rencontre utilisent ces identifiants pour créer un compte.</p></div>)}
                 {tab === "FACE" && (<div><input type="file" multiple accept="image/*" id="face-upload" onChange={onUpload} disabled={photos.length >= 3} style={{ display: "none" }} /><label htmlFor="face-upload" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "40px 20px", border: "2px dashed #d0d0d0", borderRadius: 16, background: "#fafafa", cursor: "pointer" }}><div style={{ background: "#fff", padding: 12, borderRadius: "50%", boxShadow: "0 4px 12px rgba(59,130,246,0.15)", color: "var(--blue)" }}>{IC.upload({ s: 24 })}</div><p style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>Uploadez 1 à 3 photos nettes du visage</p><p style={{ fontSize: 12, color: "#aaa" }}>JPG, PNG — Max 5 Mo</p></label>{photos.length > 0 && (<div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>{photos.map((p, i) => (<div key={i} style={{ position: "relative", width: 64, height: 64, borderRadius: 12, overflow: "hidden", border: "2px solid #e5e5e5", boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}><img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /><button onClick={() => setPhotos(x => x.filter((_, j) => j !== i))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,.7)", border: "none", borderRadius: "50%", padding: 3, cursor: "pointer", display: "flex" }}>{IC.x({ s: 10, c: "#fff" })}</button></div>))}</div>)}</div>)}
-
                 {tab === "INSTA" && (<div style={{ display: "flex", flexDirection: "column", gap: 12 }}><div style={{ position: "relative" }}><div style={{ position: "relative", zIndex: 10 }}><div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, background: 'rgba(139,92,246,0.1)', color: 'var(--purple)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{IC.at({ s: 16 })}</div><input value={instaQuery} onChange={e => { setInstaQuery(e.target.value); if (selectedInstaProfile) setSelectedInstaProfile(null); }} placeholder="Rechercher un compte Instagram…" style={{ width: "100%", padding: "16px 16px 16px 56px", borderRadius: 12, border: "2px solid #eaeaea", fontSize: 15, fontWeight: 600, background: "#fafafa", color: "#111", transition: "all .2s" }} />{isSearchingInsta && (<div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)" }}><div style={{ width: 18, height: 18, border: "2px solid #eee", borderTopColor: "var(--purple)", borderRadius: "50%", animation: "spin .7s linear infinite" }} /></div>)}</div>{instaResults.length > 0 && !selectedInstaProfile && (<div className="fi" style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", borderRadius: 14, marginTop: 8, boxShadow: "0 14px 40px rgba(0,0,0,.15)", border: "1px solid #eaeaea", zIndex: 50, overflow: "hidden" }}>{instaResults.map((prof, i) => (<div key={i} onClick={() => { setSelectedInstaProfile(prof); setInstaQuery(prof.username); setInstaResults([]); }} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", cursor: "pointer", borderBottom: i === instaResults.length - 1 ? "none" : "1px solid #f5f5f5", transition: "background .15s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>{prof.profile_pic_url ? (<img src={`https://images.weserv.nl/?url=${encodeURIComponent(prof.profile_pic_url)}`} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid #eee" }} />) : (<div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 20, c: "#999" })}</div>)}<div><p style={{ fontSize: 14, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>{prof.username}{prof.is_verified && <span style={{ color: "#3b82f6", fontSize: 12 }}>✓</span>}</p><p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{prof.full_name}</p></div></div>))}</div>)}{selectedInstaProfile && (<div className="fi" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, background: "rgba(139,92,246,.06)", border: "1px solid rgba(139,92,246,.2)", borderRadius: 12, padding: "14px 16px" }}>{selectedInstaProfile.profile_pic_url ? (<img src={`https://images.weserv.nl/?url=${encodeURIComponent(selectedInstaProfile.profile_pic_url)}`} alt="" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)" }} />) : (<div style={{ width: 50, height: 50, borderRadius: "50%", background: "#fff", border: "2px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 24, c: "#aaa" })}</div>)}<div style={{ flex: 1 }}><p style={{ fontSize: 10, fontWeight: 800, color: "var(--purple)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 3 }}>Profil sélectionné</p><p style={{ fontSize: 15, fontWeight: 700, color: "#111", display: "flex", alignItems: "center", gap: 4 }}>@{selectedInstaProfile.username}{selectedInstaProfile.is_verified && <span style={{ color: "#3b82f6", fontSize: 12 }}>✓</span>}</p></div><div style={{ color: "var(--purple)" }}>{IC.checkCircle({ s: 24 })}</div></div>)}</div></div>)}
-
-                <button onClick={startScan} disabled={!canScan} className={!canScan ? "btn-disabled" : "bdark"} style={{ width: "100%", padding: "18px", borderRadius: 12, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .3s" }}>{canScan ? "RENSEIGNEZ LES INFORMATIONS CI-DESSUS" : "RENSEIGNEZ LES INFORMATIONS CI-DESSUS"}</button>
+                <button onClick={startScan} disabled={!canScan} className={!canScan ? "btn-disabled" : "bdark"} style={{ width: "100%", padding: "18px", borderRadius: 12, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .3s" }}>{canScan ? "Lancer la vérification" : "Renseignez les informations ci-dessus"} {canScan && IC.arrowRight({ s: 18 })}</button>
                 <p style={{ textAlign: "center", fontSize: 12, color: "#aaa", marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.lock({ s: 12, c: '#aaa' })} Recherche anonyme - Aucune notification envoyée</p>
               </div>
             </div>
           </section>
 
-          {/* SOURCED STATS & CARDS — EXACT MATCH SCREENSHOT 2 (WITH ADDED COLOR/GLOW) */}
+          {/* ════ SOURCED STATS ════ */}
           <section style={{ padding: "20px 20px 40px", position: "relative", zIndex: 10 }}>
             <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, textAlign: "center", marginBottom: 60 }}>
-              {[
-                { val: "32%", desc: "des Français en couple ont déjà utilisé une app de rencontre", src: "IFOP 2024", c: "#3b82f6" },
-                { val: "2,4M", desc: "de profils actifs sur les apps de dating en France", src: "ESTIMATION MARCHÉ 2025", c: "#dc2626" },
-                { val: "63%", desc: "des utilisateurs de Tinder déclarent être en couple", src: "ÉTUDE BVA", c: "#f59e0b" }
-              ].map((s, i) => (
-                <div key={i} style={{ padding: "8px 12px" }}>
-                  <p style={{ fontSize: 34, fontWeight: 800, color: "var(--t1)", letterSpacing: "-.03em", marginBottom: 12, textShadow: `0 0 30px ${s.c}50` }}>{s.val}</p>
-                  <p style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.6, marginBottom: 12, maxWidth: 220, margin: "0 auto 12px" }}>{s.desc}</p>
-                  <p style={{ fontSize: 9, color: "var(--t4)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>{s.src}</p>
+              {[{ val: "32%", desc: "des Français en couple ont déjà utilisé une app de rencontre", src: "IFOP 2024", c: "#3b82f6" }, { val: "2,4M", desc: "de profils actifs sur les apps de dating en France", src: "ESTIMATION MARCHÉ 2025", c: "#dc2626" }, { val: "63%", desc: "des utilisateurs de Tinder déclarent être en couple", src: "ÉTUDE BVA", c: "#f59e0b" }].map((s, i) => (<div key={i} style={{ padding: "8px 12px" }}><p style={{ fontSize: 34, fontWeight: 800, color: "var(--t1)", letterSpacing: "-.03em", marginBottom: 12, textShadow: `0 0 30px ${s.c}50` }}>{s.val}</p><p style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.6, marginBottom: 12, maxWidth: 220, margin: "0 auto 12px" }}>{s.desc}</p><p style={{ fontSize: 9, color: "var(--t4)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>{s.src}</p></div>))}
+            </div>
+            <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+              {[{ val: 84200, label: "VÉRIFICATIONS", icon: IC.search, suffix: "+", c: "#3b82f6" }, { val: 9400, label: "PROFILS IDENTIFIÉS", icon: IC.alert, suffix: "+", c: "#ef4444" }, { val: 47, label: "TEMPS MOYEN", icon: IC.clock, suffix: " sec", c: "#f59e0b" }, { val: 4.7, label: "SATISFACTION", icon: IC.star, suffix: "/5", c: "#22c55e" }].map((s, i) => (<div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 16, padding: "28px 20px", border: `1px solid ${s.c}25`, textAlign: "center", position: "relative", overflow: "hidden", boxShadow: `0 8px 30px ${s.c}08` }}><div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", width: 100, height: 100, background: `radial-gradient(circle, ${s.c}20 0%, transparent 70%)`, pointerEvents: "none" }} /><div style={{ color: s.c, marginBottom: 14, display: "flex", justifyContent: "center", opacity: 0.9 }}>{s.icon({ s: 22 })}</div><p style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.04em" }}>{typeof s.val === "number" && s.val > 100 ? <AnimNum target={s.val} /> : s.val}{s.suffix}</p><p style={{ fontSize: 9, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 8 }}>{s.label}</p></div>))}
+            </div>
+          </section>
+
+          {/* ════ SYMPTOMS ════ */}
+          <section style={{ padding: "84px 20px", maxWidth: 1060, margin: "0 auto" }}>
+            <SH title="Vous reconnaissez ces signes ?" sub="Si l'un de ces comportements vous parle, vous méritez une réponse claire." />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 14 }}>
+              {[{ icon: IC.phone, title: "Téléphone verrouillé", desc: "Toujours face retournée. Code modifié récemment sans explication." }, { icon: IC.msgLock, title: "Conversations effacées", desc: "Historique trop propre. Des applications supprimées discrètement." }, { icon: IC.bellOff, title: "Notifications coupées", desc: "Alertes désactivées. L'écran ne s'allume plus en votre présence." }, { icon: IC.clock, title: "Absences inexpliquées", desc: "Des « réunions » de plus en plus fréquentes et difficiles à vérifier." }].map((s, i) => (
+                <div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 20, padding: "30px 24px", border: "1px solid var(--bd)" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(220,38,38,.06)", border: "1px solid rgba(220,38,38,.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}><div style={{ color: "var(--red)" }}>{s.icon({ s: 18 })}</div></div>
+                  <h3 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{s.title}</h3>
+                  <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.6 }}>{s.desc}</p>
                 </div>
               ))}
             </div>
+            <div style={{ textAlign: "center", marginTop: 32 }}><button onClick={scrollTop} className="bp" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}>Vérifier maintenant {IC.arrowRight({ s: 16 })}</button></div>
+          </section>
 
-            <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-              {[
-                { val: 84200, label: "VÉRIFICATIONS", icon: IC.search, suffix: "+", c: "#3b82f6" },
-                { val: 9400, label: "PROFILS IDENTIFIÉS", icon: IC.alert, suffix: "+", c: "#ef4444" },
-                { val: 47, label: "TEMPS MOYEN", icon: IC.clock, suffix: " sec", c: "#f59e0b" },
-                { val: 4.7, label: "SATISFACTION", icon: IC.star, suffix: "/5", c: "#22c55e" }
-              ].map((s, i) => (
-                <div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 16, padding: "28px 20px", border: `1px solid ${s.c}25`, textAlign: "center", position: "relative", overflow: "hidden", boxShadow: `0 8px 30px ${s.c}08` }}>
-                  <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", width: 100, height: 100, background: `radial-gradient(circle, ${s.c}20 0%, transparent 70%)`, pointerEvents: "none" }} />
-                  <div style={{ color: s.c, marginBottom: 14, display: "flex", justifyContent: "center", opacity: 0.9 }}>{s.icon({ s: 22 })}</div>
-                  <p style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-.04em" }}>{typeof s.val === "number" && s.val > 100 ? <AnimNum target={s.val} /> : s.val}{s.suffix}</p>
-                  <p style={{ fontSize: 9, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 8 }}>{s.label}</p>
+          {/* ════ HOW IT WORKS ════ */}
+          <section id="methode" style={{ padding: "84px 20px", maxWidth: 1060, margin: "0 auto" }}>
+            <SH tag="Comment ça marche" title="Trois étapes simples" sub="Notre système vérifie la présence d'un profil sur les 3 principales apps de rencontre en France." />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18 }}>
+              {[{ n: "01", title: "Fournissez une information", desc: "Email, numéro de téléphone, pseudo Instagram ou photo. Une seule information suffit pour lancer la vérification.", icon: IC.user }, { n: "02", title: "Vérification automatique", desc: "Notre système recherche la présence d'un profil correspondant sur Tinder, Bumble et Hinge. Processus 100% anonyme.", icon: IC.globe }, { n: "03", title: "Consultez votre rapport", desc: "Résultat clair par application. Si un profil existe : aperçu, bio et informations publiques disponibles dans votre rapport.", icon: IC.fileText }].map((h, i) => (
+                <div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 22, padding: "38px 26px", border: "1px solid var(--bd)", position: "relative" }}>
+                  <span style={{ position: "absolute", top: -13, left: 20, background: "var(--red)", color: "#fff", fontWeight: 800, fontSize: 13, width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px -4px rgba(220,38,38,.4)" }}>{h.n}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, marginTop: 4 }}><h3 style={{ fontWeight: 800, fontSize: 18, letterSpacing: "-.02em", maxWidth: "80%" }}>{h.title}</h3><div style={{ color: "var(--t4)" }}>{h.icon({ s: 20 })}</div></div>
+                  <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.7 }}>{h.desc}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* HOW IT WORKS */}
-          <section id="methode" style={{ padding: "84px 20px", maxWidth: 1060, margin: "0 auto" }}><SH tag="Comment ça marche" title="Trois étapes simples" sub="Notre système vérifie la présence d'un profil sur les 3 principales apps de rencontre en France." /><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18 }}>{[{ n: "01", title: "Fournissez une information", desc: "Email, numéro de téléphone, pseudo Instagram ou photo. Une seule information suffit pour lancer la vérification.", icon: IC.user }, { n: "02", title: "Vérification automatique", desc: "Notre système recherche la présence d'un profil correspondant sur Tinder, Bumble et Hinge. Processus 100% anonyme.", icon: IC.globe }, { n: "03", title: "Consultez votre rapport", desc: "Résultat clair par application. Si un profil existe : aperçu, bio et informations publiques disponibles dans votre rapport.", icon: IC.fileText }].map((h, i) => (<div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 22, padding: "38px 26px", border: "1px solid var(--bd)", position: "relative" }}><span style={{ position: "absolute", top: -13, left: 20, background: "var(--red)", color: "#fff", fontWeight: 800, fontSize: 13, width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px -4px rgba(220,38,38,.4)" }}>{h.n}</span><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, marginTop: 4 }}><h3 style={{ fontWeight: 800, fontSize: 18, letterSpacing: "-.02em", maxWidth: "80%" }}>{h.title}</h3><div style={{ color: "var(--t4)" }}>{h.icon({ s: 20 })}</div></div><p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.7 }}>{h.desc}</p></div>))}</div></section>
+          {/* ════ TESTIMONIALS ════ */}
+          <section id="avis" style={{ padding: "84px 20px", maxWidth: 1060, margin: "0 auto" }}>
+            <SH tag="Avis" title="Ce qu&apos;en pensent nos utilisateurs" sub="Plus de 84 000 vérifications réalisées. Note moyenne : 4.7/5." />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 14 }}>
+              {testimonials.map((t, i) => (
+                <div key={i} className="ch" style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 24px", border: "1px solid var(--bd)" }}>
+                  <div style={{ display: "flex", gap: 1, marginBottom: 14 }}>
+                    {[...Array(5)].map((_, j) => <span key={j} style={{ color: j < t.stars ? "var(--gold)" : "var(--t4)", fontSize: 13 }}>★</span>)}
+                  </div>
+                  <p style={{ color: "var(--t2)", fontSize: 13, lineHeight: 1.65, marginBottom: 18 }}>&ldquo;{t.text}&rdquo;</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--s3)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "var(--t2)" }}>{t.name[0]}</div>
+                      <div><p style={{ fontWeight: 700, fontSize: 12 }}>{t.name}</p><p style={{ fontSize: 10, color: "var(--t3)" }}>{t.city}</p></div>
+                    </div>
+                    <span style={{ fontSize: 10, color: "var(--t4)" }}>{t.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-          {/* FOOTER */}
-          <footer style={{ borderTop: "1px solid var(--bd)", padding: "44px 20px 28px", maxWidth: 1060, margin: "0 auto" }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 28, marginBottom: 32 }}><div style={{ maxWidth: 300 }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><div style={{ background: "var(--red)", padding: "4px 7px", borderRadius: 6, fontWeight: 800, fontStyle: "italic", fontSize: 14 }}>C<span style={{ color: "var(--gold)" }}>O</span>P</div><span style={{ fontWeight: 700, fontSize: 13 }}>CocuOuPas.fr</span></div><p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.7 }}>Service de vérification confidentiel. Nous aidons les personnes à obtenir des réponses claires sur leur relation.</p></div><div style={{ display: "flex", gap: 48 }}>{[{ t: "Légal", items: ["Mentions légales", "CGV / CGU", "Confidentialité", "Cookies"] }, { t: "Support", items: ["Aide", "Remboursements", "Contact"] }].map((c, i) => (<div key={i}><p style={{ fontSize: 9, fontWeight: 800, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 12 }}>{c.t}</p>{c.items.map(l => <p key={l} style={{ fontSize: 11, color: "var(--t3)", marginBottom: 8, cursor: "pointer" }}>{l}</p>)}</div>))}</div></div><div style={{ borderTop: "1px solid var(--bd)", paddingTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}><p style={{ fontSize: 9, color: "var(--t4)", letterSpacing: ".08em", textTransform: "uppercase" }}>© 2026 TS Digital SAS — CocuOuPas.fr</p><div style={{ display: "flex", gap: 14, fontSize: 10, color: "var(--t3)" }}><span>🇫🇷 France</span><span style={{ color: "var(--t4)" }}>·</span><span>RGPD</span><span style={{ color: "var(--t4)" }}>·</span><span>SSL</span><span style={{ color: "var(--t4)" }}>·</span><span>Stripe</span></div></div></footer>
+          {/* ════ COMPARE ════ */}
+          <section style={{ padding: "84px 20px", background: "var(--s1)", borderTop: "1px solid var(--bd)", borderBottom: "1px solid var(--bd)" }}>
+            <div style={{ maxWidth: 1060, margin: "0 auto" }}>
+              <SH tag="Comparatif" title="Un service accessible à tous" />
+              <div style={{ maxWidth: 700, margin: "0 auto", borderRadius: 18, overflow: "hidden", border: "1px solid var(--bd)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", background: "var(--s2)", padding: "14px 22px", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--t3)", borderBottom: "1px solid var(--bd)" }}><span /><span style={{ textAlign: "center" }}>Détective privé</span><span style={{ textAlign: "center", color: "var(--red)" }}>CocuOuPas</span></div>
+                {[{ l: "Délai", a: "7–15 jours", b: "≈ 60 sec" }, { l: "Tarif", a: "800–2 000€", b: "À partir de 3,99€" }, { l: "Anonymat", a: "Variable", b: "Garanti" }, { l: "Format", a: "Rapport oral", b: "Rapport numérique" }, { l: "Disponibilité", a: "Heures bureau", b: "24/7" }].map((r, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "14px 22px", borderBottom: "1px solid var(--bd)", fontSize: 12, alignItems: "center" }}>
+                    <span style={{ fontWeight: 700, color: "var(--t2)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".03em" }}>{r.l}</span>
+                    <span style={{ textAlign: "center", color: "var(--t3)" }}>{r.a}</span>
+                    <span style={{ textAlign: "center", color: "var(--green)", fontWeight: 700 }}>{r.b}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ════ SECURITY ════ */}
+          <section style={{ padding: "64px 20px", maxWidth: 1060, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 18, textAlign: "center" }}>
+              {[{ icon: IC.shield, title: "Recherche anonyme", desc: "Aucune interaction avec le profil recherché. Aucune notification envoyée, aucune trace laissée.", color: "var(--green)" }, { icon: IC.lock, title: "Données chiffrées", desc: "Rapport chiffré de bout en bout (AES-256). Accessible via un lien unique et temporaire.", color: "var(--blue)" }, { icon: IC.eye, title: "Rien n'est conservé", desc: "Toutes les données sont supprimées sous 48h. Service conforme au RGPD.", color: "var(--purple)" }].map((s, i) => (
+                <div key={i} style={{ padding: "32px 24px", background: "var(--s1)", borderRadius: 20, border: "1px solid var(--bd)" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: `${s.color}08`, border: `1px solid ${s.color}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}><div style={{ color: s.color }}>{s.icon({ s: 22 })}</div></div>
+                  <h3 style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{s.title}</h3>
+                  <p style={{ color: "var(--t3)", fontSize: 12, lineHeight: 1.65, maxWidth: 280, margin: "0 auto" }}>{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ════ FAQ ════ */}
+          <section id="faq" style={{ padding: "84px 20px", background: "var(--s1)", borderTop: "1px solid var(--bd)", borderBottom: "1px solid var(--bd)" }}>
+            <div style={{ maxWidth: 1060, margin: "0 auto" }}>
+              <SH tag="FAQ" title="Questions fréquentes" />
+              <div style={{ maxWidth: 660, margin: "0 auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                {faqs.map((f, i) => (
+                  <div key={i} style={{ borderRadius: 14, border: "1px solid var(--bd)", background: "var(--s2)", overflow: "hidden" }}>
+                    <button onClick={() => setFaq(faq === i ? null : i)} style={{ width: "100%", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: 14, fontWeight: 700 }}>
+                      <span>{f.q}</span><span style={{ transform: faq === i ? "rotate(180deg)" : "rotate(0)", transition: "transform .3s", flexShrink: 0, marginLeft: 12, color: "var(--red)" }}>{IC.chevDown({ s: 16 })}</span>
+                    </button>
+                    <div style={{ maxHeight: faq === i ? 300 : 0, overflow: "hidden", transition: "max-height .35s ease" }}>
+                      <p style={{ padding: "0 18px 16px", color: "var(--t2)", fontSize: 13, lineHeight: 1.65 }}>{f.a}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ════ CTA ════ */}
+          <section style={{ padding: "84px 20px", maxWidth: 580, margin: "0 auto" }}>
+            <div style={{ background: "linear-gradient(135deg,#1a0000,#200000,#1a0a00)", borderRadius: 28, padding: 2 }}>
+              <div style={{ background: "var(--bg)", borderRadius: 26, padding: "56px 36px", textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>{IC.coffee({ s: 28, c: "var(--gold)" })}</div>
+                <h2 style={{ fontSize: "clamp(20px,4vw,28px)", fontWeight: 800, letterSpacing: "-.03em", marginBottom: 8 }}>La vérité pour le prix d&apos;un café.</h2>
+                <p style={{ fontSize: 13, color: "var(--t3)", maxWidth: 400, margin: "0 auto 28px", lineHeight: 1.6 }}>Un espresso coûte 3,90€. Une vérification complète sur 3 applications, à partir de 3,99€.</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 28 }}>
+                  <span style={{ fontSize: "clamp(42px,10vw,64px)", fontWeight: 800, letterSpacing: "-.04em", background: "linear-gradient(135deg,var(--gold-l),var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>3,99€</span>
+                </div>
+                <button onClick={scrollTop} className="bg" style={{ width: "100%", padding: "18px", borderRadius: 16, fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".03em" }}>Lancer une vérification</button>
+                <p style={{ fontSize: 10, color: "var(--t3)", marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>{IC.shield({ s: 11, c: "var(--t3)" })} Paiement Stripe · Libellé neutre sur relevé</p>
+              </div>
+            </div>
+          </section>
+
+          {/* ════ FOOTER ════ */}
+          <footer style={{ borderTop: "1px solid var(--bd)", padding: "44px 20px 28px", maxWidth: 1060, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 28, marginBottom: 32 }}>
+              <div style={{ maxWidth: 300 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><div style={{ background: "var(--red)", padding: "4px 7px", borderRadius: 6, fontWeight: 800, fontStyle: "italic", fontSize: 14 }}>C<span style={{ color: "var(--gold)" }}>O</span>P</div><span style={{ fontWeight: 700, fontSize: 13 }}>CocuOuPas.fr</span></div>
+                <p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.7 }}>Service de vérification confidentiel. Nous aidons les personnes à obtenir des réponses claires sur leur relation.</p>
+              </div>
+              <div style={{ display: "flex", gap: 48 }}>
+                {[{ t: "Légal", items: ["Mentions légales", "CGV / CGU", "Confidentialité", "Cookies"] }, { t: "Support", items: ["Aide", "Remboursements", "Contact"] }].map((c, i) => (
+                  <div key={i}><p style={{ fontSize: 9, fontWeight: 800, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 12 }}>{c.t}</p>{c.items.map(l => <p key={l} style={{ fontSize: 11, color: "var(--t3)", marginBottom: 8, cursor: "pointer" }}>{l}</p>)}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid var(--bd)", paddingTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <p style={{ fontSize: 9, color: "var(--t4)", letterSpacing: ".08em", textTransform: "uppercase" }}>© 2026 TS Digital SAS — CocuOuPas.fr</p>
+              <div style={{ display: "flex", gap: 14, fontSize: 10, color: "var(--t3)" }}><span>🇫🇷 France</span><span style={{ color: "var(--t4)" }}>·</span><span>RGPD</span><span style={{ color: "var(--t4)" }}>·</span><span>SSL</span><span style={{ color: "var(--t4)" }}>·</span><span>Stripe</span></div>
+            </div>
+          </footer>
         </div>
       )}
 
-      {/* ══════════════ SCAN & RESULT CONTENT (RESTE INCHANGÉ) ══════════════ */}
+      {/* ══════════════ SCAN ══════════════ */}
       {screen === "SCAN" && (
         <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 40px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: "100%", maxWidth: 720 }}>
-            <div style={{ textAlign: "center", marginBottom: 28 }}><div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,38,38,.08)", border: "1px solid rgba(220,38,38,.15)", borderRadius: 100, padding: "6px 16px", marginBottom: 16, fontSize: 11, fontWeight: 700, color: "var(--red)" }}><span className="pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />Vérification en cours — {formatTime(elapsed)}</div><h2 style={{ fontSize: "clamp(18px,3vw,26px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>Vérification de <span style={{ color: "var(--red)" }}>{getScanLabel()}</span></h2><p style={{ fontSize: 13, color: "var(--t3)" }}>Analyse de 3 plateformes — Ne fermez pas cette page</p></div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>{APPS.map((app, i) => { const st = appStatus[i]; const isActive = st === "scan"; return (<div key={i} style={{ background: "var(--s1)", borderRadius: 16, padding: "18px 14px", border: `1px solid ${isActive ? "rgba(255,255,255,.12)" : "var(--bd)"}`, textAlign: "center", transition: "all .5s", opacity: st === "wait" ? .35 : 1, position: "relative", overflow: "hidden" }}>{isActive && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${app.color},transparent)`, animation: "marquee 2s linear infinite" }} />}<span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>{app.icon}</span><p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{app.name}</p><p style={{ fontSize: 10, color: "var(--t3)", marginBottom: 10 }}>{app.db} profils</p>{st === "wait" && <p style={{ fontSize: 10, color: "var(--t3)" }}>En attente<Dots /></p>}{st === "scan" && (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><div style={{ width: 12, height: 12, border: "2px solid var(--t3)", borderTopColor: app.color, borderRadius: "50%", animation: "spin .7s linear infinite" }} /><span style={{ fontSize: 11, color: app.color, fontWeight: 700 }}>Analyse<Dots /></span></div>)}{st === "done" && (<div className="fu" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>{IC.checkCircle({ s: 13, c: "var(--t2)" })}<span style={{ fontSize: 11, color: "var(--t2)", fontWeight: 600 }}>Terminé</span></div>)}</div>); })}</div>
-            <div style={{ marginBottom: 16 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, color: "var(--t3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".06em" }}><span>Progression</span><span style={{ color: scanPct >= 100 ? "var(--green)" : "var(--t2)" }}>{scanPct}%</span></div><div style={{ height: 6, background: "var(--s2)", borderRadius: 3, overflow: "hidden" }}><div className={scanPct < 100 ? "progress-bar" : ""} style={{ height: "100%", width: `${scanPct}%`, background: scanPct >= 100 ? "var(--green)" : "linear-gradient(90deg,#7f1d1d,#dc2626)", transition: "width .4s ease", borderRadius: 3 }} /></div></div>
-            <div style={{ background: "#030303", borderRadius: 16, border: "1px solid var(--bd)", overflow: "hidden" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid var(--bd)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "var(--t3)" }}><span style={{ display: "flex", alignItems: "center", gap: 6 }}>{IC.terminal({ s: 11 })} vérification.log</span><span style={{ color: "var(--green)", display: "flex", alignItems: "center", gap: 5 }}><span className="pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />EN COURS</span></div><div className="term" style={{ padding: "14px 16px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, height: 220, overflowY: "auto", lineHeight: 1.7 }}>{scanLogs.map((l, i) => (<div key={i} className="fi" style={{ display: "flex", gap: 10, marginBottom: 3 }}><span style={{ color: "var(--t4)", flexShrink: 0, fontSize: 10 }}>{l.time}</span><span className={l.text.startsWith("────") ? "log-section" : `log-${l.type}`}>{l.text}</span></div>))}<span className="pulse" style={{ color: "var(--green)", opacity: .25 }}>█</span><div ref={termRef} /></div></div>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,38,38,.08)", border: "1px solid rgba(220,38,38,.15)", borderRadius: 100, padding: "6px 16px", marginBottom: 16, fontSize: 11, fontWeight: 700, color: "var(--red)" }}><span className="pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />Vérification en cours — {formatTime(elapsed)}</div>
+              <h2 style={{ fontSize: "clamp(18px,3vw,26px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>Vérification de <span style={{ color: "var(--red)" }}>{getScanLabel()}</span></h2>
+              <p style={{ fontSize: 13, color: "var(--t3)" }}>Analyse de 3 plateformes — Ne fermez pas cette page</p>
+            </div>
+
+            {/* Biometric card (Insta only) */}
+            {scanTab === "INSTA" && selectedInstaProfile && (
+              <div className="fu" style={{ background: "var(--s1)", borderRadius: 18, border: "1px solid var(--bd)", padding: "18px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 18 }}>
+                <div style={{ position: "relative", width: 72, height: 72, borderRadius: 14, overflow: "hidden", flexShrink: 0, border: "2px solid rgba(220,38,38,.3)" }}>
+                  {selectedInstaProfile.profile_pic_url ? (<img src={`https://images.weserv.nl/?url=${encodeURIComponent(selectedInstaProfile.profile_pic_url)}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<div style={{ width: "100%", height: "100%", background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center" }}>{IC.user({ s: 28, c: "var(--t3)" })}</div>)}
+                  <div className="bio-grid" style={{ position: "absolute", inset: 0 }} />
+                  <div className="scan-line" />
+                  {[[0, 0], [1, 0], [0, 1], [1, 1]].map(([x, y], i) => (<div key={i} style={{ position: "absolute", [y ? "bottom" : "top"]: 2, [x ? "right" : "left"]: 2, width: 10, height: 10, [y ? "borderBottom" : "borderTop"]: "2px solid var(--red)", [x ? "borderRight" : "borderLeft"]: "2px solid var(--red)", zIndex: 4 }} />))}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--red)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}><span className="pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />Recherche par profil</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 2 }}>@{selectedInstaProfile.username}</p>
+                  {selectedInstaProfile.full_name && <p style={{ fontSize: 12, color: "var(--t3)" }}>{selectedInstaProfile.full_name}</p>}
+                  <p style={{ fontSize: 10, color: "var(--t3)", marginTop: 6, fontFamily: "'IBM Plex Mono',monospace" }}>{scanPhase === "DONE" ? "Vérification terminée" : "Recherche en cours…"}</p>
+                </div>
+              </div>
+            )}
+
+            {/* App cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+              {APPS.map((app, i) => {
+                const st = appStatus[i]; const isActive = st === "scan"; return (
+                  <div key={i} style={{ background: "var(--s1)", borderRadius: 16, padding: "18px 14px", border: `1px solid ${isActive ? "rgba(255,255,255,.12)" : "var(--bd)"}`, textAlign: "center", transition: "all .5s", opacity: st === "wait" ? .35 : 1, position: "relative", overflow: "hidden" }}>
+                    {isActive && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${app.color},transparent)`, animation: "marquee 2s linear infinite" }} />}
+                    <span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>{app.icon}</span>
+                    <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{app.name}</p>
+                    <p style={{ fontSize: 10, color: "var(--t3)", marginBottom: 10 }}>{app.db} profils</p>
+                    {st === "wait" && <p style={{ fontSize: 10, color: "var(--t3)" }}>En attente<Dots /></p>}
+                    {st === "scan" && (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><div style={{ width: 12, height: 12, border: "2px solid var(--t3)", borderTopColor: app.color, borderRadius: "50%", animation: "spin .7s linear infinite" }} /><span style={{ fontSize: 11, color: app.color, fontWeight: 700 }}>Analyse<Dots /></span></div>)}
+                    {st === "done" && (<div className="fu" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>{IC.checkCircle({ s: 13, c: "var(--t2)" })}<span style={{ fontSize: 11, color: "var(--t2)", fontWeight: 600 }}>Terminé</span></div>)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Progress */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, color: "var(--t3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".06em" }}><span>Progression</span><span style={{ color: scanPct >= 100 ? "var(--green)" : "var(--t2)" }}>{scanPct}%</span></div>
+              <div style={{ height: 6, background: "var(--s2)", borderRadius: 3, overflow: "hidden" }}><div className={scanPct < 100 ? "progress-bar" : ""} style={{ height: "100%", width: `${scanPct}%`, background: scanPct >= 100 ? "var(--green)" : "linear-gradient(90deg,#7f1d1d,#dc2626)", transition: "width .4s ease", borderRadius: 3 }} /></div>
+            </div>
+
+            {/* Terminal */}
+            <div style={{ background: "#030303", borderRadius: 16, border: "1px solid var(--bd)", overflow: "hidden" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid var(--bd)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "var(--t3)" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{IC.terminal({ s: 11 })} vérification.log</span>
+                <span style={{ color: "var(--green)", display: "flex", alignItems: "center", gap: 5 }}><span className="pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />EN COURS</span>
+              </div>
+              <div className="term" style={{ padding: "14px 16px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, height: 220, overflowY: "auto", lineHeight: 1.7 }}>
+                {scanLogs.map((l, i) => (<div key={i} className="fi" style={{ display: "flex", gap: 10, marginBottom: 3 }}><span style={{ color: "var(--t4)", flexShrink: 0, fontSize: 10 }}>{l.time}</span><span className={l.text.startsWith("────") ? "log-section" : `log-${l.type}`}>{l.text}</span></div>))}
+                <span className="pulse" style={{ color: "var(--green)", opacity: .25 }}>█</span><div ref={termRef} />
+              </div>
+            </div>
             {scanPhase === "DONE" && (<div className="fu" style={{ textAlign: "center", marginTop: 20 }}><div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.15)", borderRadius: 100, padding: "8px 18px", fontSize: 12, fontWeight: 700, color: "var(--green)" }}>{IC.checkCircle({ s: 14, c: "var(--green)" })} Vérification terminée — Rapport prêt</div></div>)}
           </div>
         </div>
       )}
 
+      {/* ══════════════ RESULT ══════════════ */}
       {screen === "RESULT" && (
         <div className="fi" style={{ minHeight: "100vh", padding: "68px 20px 60px" }}>
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
-            <div className="fu" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 22, padding: "32px 28px", marginBottom: 16 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}><div><p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 6 }}>Rapport de vérification</p><h2 style={{ fontSize: "clamp(20px,3.5vw,28px)", fontWeight: 800, letterSpacing: "-.03em" }}>Résultats disponibles</h2></div><div style={{ background: "var(--s2)", borderRadius: 10, padding: "10px 14px", border: "1px solid var(--bd)" }}><p style={{ fontSize: 9, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>Référence</p><p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace" }}>{dossierRef.current}</p></div></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10 }}>{[{ l: "Recherche", v: getScanLabel() }, { l: "Date", v: new Date().toLocaleDateString("fr-FR") }, { l: "Plateformes", v: "3 analysées" }, { l: "Durée", v: `${formatTime(elapsed)}` }, { l: "Méthode", v: scanTab === "EMAIL" ? "Identifiants" : scanTab === "INSTA" ? "Profil Instagram" : "Photo" }, { l: "Chiffrement", v: "AES-256" }].map((d, i) => (<div key={i} style={{ background: "var(--s2)", borderRadius: 10, padding: "10px 14px", border: "1px solid var(--bd)" }}><p style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--t4)", marginBottom: 2 }}>{d.l}</p><p style={{ fontSize: 12, fontWeight: 600, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.v}</p></div>))}</div></div>
-            <div className="fu d1" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 16 }}>{APPS.map((app, i) => (<div key={i} style={{ background: "var(--s1)", borderRadius: 16, padding: "20px 14px", border: "1px solid var(--bd)", textAlign: "center" }}><span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>{app.icon}</span><p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{app.name}</p><div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, background: "rgba(255,255,255,.03)", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--bd)" }}>{IC.lock({ s: 12, c: "var(--t3)" })}<span style={{ fontSize: 10, fontWeight: 600, color: "var(--t3)" }}>Résultat disponible</span></div></div>))}</div>
-            <div className="fu d2" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 14, padding: "16px 18px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 12 }}>{IC.fileText({ s: 18, c: "var(--t3)" })}<div><p style={{ fontSize: 13, fontWeight: 700, color: "var(--t2)" }}>Votre rapport est prêt</p><p style={{ fontSize: 12, color: "var(--t3)", marginTop: 2, lineHeight: 1.5 }}>Débloquez-le pour consulter les résultats détaillés de chaque plateforme. Satisfait ou remboursé si erreur technique.</p></div></div>
-            <div className="fu d3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              <div style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", border: "2px solid var(--bd)", display: "flex", flexDirection: "column" }}><p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 14 }}>Standard</p><div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}><span style={{ fontSize: 36, fontWeight: 800 }}>3,99€</span></div><div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, flex: 1 }}>{[{ ok: true, t: "Résultat par application" }, { ok: true, t: "Nom et âge du profil" }, { ok: true, t: "Période d'activité" }, { ok: true, t: "Résumé par email" }, { ok: false, t: "Captures d'écran" }, { ok: false, t: "Bio & centres d'intérêt" }, { ok: false, t: "Rapport PDF" }].map((f, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: f.ok ? "var(--t2)" : "var(--t4)" }}>{f.ok ? IC.check({ s: 14, c: "var(--green)" }) : IC.x({ s: 14, c: "var(--t4)" })}{f.t}</div>))}</div><button className="bo" style={{ width: "100%", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 800 }}>Débloquer</button></div>
-              <div className="tier-pop" style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}><p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--gold)" }}>Intégral</p><span style={{ fontSize: 8, fontWeight: 800, background: "var(--gold)", color: "#000", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase" }}>Recommandé</span></div><div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}><span style={{ fontSize: 36, fontWeight: 800, background: "linear-gradient(135deg,var(--gold-l),var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>9,99€</span></div><div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, flex: 1 }}>{[{ t: "Résultat par application" }, { t: "Captures d'écran complètes" }, { t: "Bio & centres d'intérêt" }, { t: "Distance approximative" }, { t: "Date estimée de création" }, { t: "Résumé par email" }, { t: "Rapport PDF (réf. unique)" }].map((f, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--t2)" }}>{IC.check({ s: 14, c: "var(--gold)" })}{f.t}</div>))}</div><button className="bg" style={{ width: "100%", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer</button></div>
+
+            {/* Recap */}
+            <div className="fu" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 22, padding: "32px 28px", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+                <div><p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 6 }}>Rapport de vérification</p><h2 style={{ fontSize: "clamp(20px,3.5vw,28px)", fontWeight: 800, letterSpacing: "-.03em" }}>Résultats disponibles</h2></div>
+                <div style={{ background: "var(--s2)", borderRadius: 10, padding: "10px 14px", border: "1px solid var(--bd)" }}><p style={{ fontSize: 9, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 }}>Référence</p><p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace" }}>{dossierRef.current}</p></div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10 }}>
+                {[{ l: "Recherche", v: getScanLabel() }, { l: "Date", v: new Date().toLocaleDateString("fr-FR") }, { l: "Plateformes", v: "3 analysées" }, { l: "Durée", v: `${formatTime(elapsed)}` }, { l: "Méthode", v: scanTab === "EMAIL" ? "Identifiants" : scanTab === "INSTA" ? "Profil Instagram" : "Photo" }, { l: "Chiffrement", v: "AES-256" }].map((d, i) => (
+                  <div key={i} style={{ background: "var(--s2)", borderRadius: 10, padding: "10px 14px", border: "1px solid var(--bd)" }}><p style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--t4)", marginBottom: 2 }}>{d.l}</p><p style={{ fontSize: 12, fontWeight: 600, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.v}</p></div>
+                ))}
+              </div>
             </div>
+
+            {/* App results — ALL LOCKED */}
+            <div className="fu d1" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 16 }}>
+              {APPS.map((app, i) => (
+                <div key={i} style={{ background: "var(--s1)", borderRadius: 16, padding: "20px 14px", border: "1px solid var(--bd)", textAlign: "center" }}>
+                  <span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>{app.icon}</span>
+                  <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{app.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, background: "rgba(255,255,255,.03)", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--bd)" }}>{IC.lock({ s: 12, c: "var(--t3)" })}<span style={{ fontSize: 10, fontWeight: 600, color: "var(--t3)" }}>Résultat disponible</span></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Info banner */}
+            <div className="fu d2" style={{ background: "var(--s1)", border: "1px solid var(--bd)", borderRadius: 14, padding: "16px 18px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 12 }}>
+              {IC.fileText({ s: 18, c: "var(--t3)" })}
+              <div><p style={{ fontSize: 13, fontWeight: 700, color: "var(--t2)" }}>Votre rapport est prêt</p><p style={{ fontSize: 12, color: "var(--t3)", marginTop: 2, lineHeight: 1.5 }}>Débloquez-le pour consulter les résultats détaillés de chaque plateforme. Satisfait ou remboursé si erreur technique.</p></div>
+            </div>
+
+            {/* 2-TIER PRICING */}
+            <div className="fu d3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              {/* Standard */}
+              <div style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", border: "2px solid var(--bd)", display: "flex", flexDirection: "column" }}>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", marginBottom: 14 }}>Standard</p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}><span style={{ fontSize: 36, fontWeight: 800 }}>3,99€</span></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, flex: 1 }}>
+                  {[{ ok: true, t: "Résultat par application" }, { ok: true, t: "Nom et âge du profil" }, { ok: true, t: "Période d'activité" }, { ok: true, t: "Résumé par email" }, { ok: false, t: "Captures d'écran" }, { ok: false, t: "Bio & centres d'intérêt" }, { ok: false, t: "Rapport PDF" }].map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: f.ok ? "var(--t2)" : "var(--t4)" }}>{f.ok ? IC.check({ s: 14, c: "var(--green)" }) : IC.x({ s: 14, c: "var(--t4)" })}{f.t}</div>
+                  ))}
+                </div>
+                <button className="bo" style={{ width: "100%", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 800 }}>Débloquer</button>
+              </div>
+              {/* Intégral */}
+              <div className="tier-pop" style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}><p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--gold)" }}>Intégral</p><span style={{ fontSize: 8, fontWeight: 800, background: "var(--gold)", color: "#000", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase" }}>Recommandé</span></div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}><span style={{ fontSize: 36, fontWeight: 800, background: "linear-gradient(135deg,var(--gold-l),var(--gold))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>9,99€</span></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, flex: 1 }}>
+                  {[{ t: "Résultat par application" }, { t: "Captures d'écran complètes" }, { t: "Bio & centres d'intérêt" }, { t: "Distance approximative" }, { t: "Date estimée de création" }, { t: "Résumé par email" }, { t: "Rapport PDF (réf. unique)" }].map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--t2)" }}>{IC.check({ s: 14, c: "var(--gold)" })}{f.t}</div>
+                  ))}
+                </div>
+                <button className="bg" style={{ width: "100%", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer</button>
+              </div>
+            </div>
+
+            <p style={{ textAlign: "center", fontSize: 10, color: "var(--t3)", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.shield({ s: 11, c: "var(--t3)" })} Paiement sécurisé Stripe · Libellé discret sur relevé</p>
             <button onClick={() => { setScreen("HOME"); setAppStatus(["wait", "wait", "wait"]); setScanLogs([]); setScanPct(0); }} style={{ display: "block", width: "100%", textAlign: "center", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", background: "none", border: "none", cursor: "pointer", padding: 14, textDecoration: "underline", textUnderlineOffset: 4 }}>Nouvelle vérification</button>
           </div>
         </div>
