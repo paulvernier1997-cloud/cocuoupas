@@ -218,7 +218,7 @@ a{color:inherit;text-decoration:none}
 .bg{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;cursor:pointer;font-weight:700;transition:all .15s}.bg:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 16px 48px -8px rgba(245,158,11,.3)}.bg:active{transform:scale(.97)}
 .bdark{background:#1f1f1f;color:#fff;border:none;cursor:pointer;font-weight:700;transition:all .15s}.bdark:hover{background:#2a2a2a;transform:translateY(-1px)}.bdark:active{transform:scale(.97)}
 .bo{background:none;color:#fff;border:2px solid var(--bd2);cursor:pointer;font-weight:700;transition:all .15s}.bo:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
-input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
+input:focus{outline:none}input:not([type="email"]):focus{border-color:#ccc!important;background:#fff!important}
 .noise::before{content:'';position:fixed;inset:0;opacity:.012;pointer-events:none;z-index:9999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .progress-bar{background-size:40px 40px;background-image:repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,.03) 8px,rgba(255,255,255,.03) 16px);animation:progressStripe 1s linear infinite}
 .dots span{display:inline-block;animation:dotPulse 1.4s infinite}.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
