@@ -89,6 +89,9 @@ export default function CocuOuPas() {
   const [appStatus, setAppStatus] = useState<AppStatus[]>(["wait", "wait", "wait"]);
   const [scanPct, setScanPct] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [clientEmail, setClientEmail] = useState("");
+  const [selectedOffer, setSelectedOffer] = useState<"standard" | "integral" | null>(null);
   const termRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTime = useRef<number>(0);
@@ -115,6 +118,9 @@ export default function CocuOuPas() {
   const ts = (): string => new Date().toLocaleTimeString("fr-FR", { hour12: false });
   const addLog = (text: string, type: LogType = "info") => setScanLogs(p => [...p, { time: ts(), text, type }]);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const STRIPE_URLS: Record<string, string> = { standard: "https://buy.stripe.com/5kQbJ2bVfgyhbdOau94Vy1F", integral: "https://buy.stripe.com/00w28scZj2Hreq09q54Vy1G" };
+  const handleEmailSubmit = async () => { if (!isValidEmail(clientEmail) || !selectedOffer) return; try { await fetch("/api/save-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: clientEmail, ref: dossierRef.current, offer: selectedOffer, search: getScanLabel(), method: scanTab }) }); } catch (e) { console.error("Save order failed:", e); } window.open(STRIPE_URLS[selectedOffer], "_blank"); setShowEmailModal(false); setClientEmail(""); setSelectedOffer(null); };
   const canScan = tab === "EMAIL" ? (input.email.trim() || input.phone.trim()) : tab === "FACE" ? photos.length > 0 : !!selectedInstaProfile;
   const getScanLabel = (): string => { if (scanTab === "INSTA" && selectedInstaProfile) return "@" + selectedInstaProfile.username; if (scanTab === "EMAIL") { if (input.email.trim()) return input.email; return input.phone; } return "analyse photo"; };
 
@@ -602,7 +608,7 @@ input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: f.ok ? "var(--t2)" : "var(--t4)" }}>{f.ok ? IC.check({ s: 14, c: "var(--green)" }) : IC.x({ s: 14, c: "var(--t4)" })}{f.t}</div>
                   ))}
                 </div>
-                <a href="https://buy.stripe.com/5kQbJ2bVfgyhbdOau94Vy1F" target="_blank" rel="noopener noreferrer" style={{ width: "100%", textDecoration: "none" }}><button className="bo" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800 }}>Débloquer — 3,99€</button></a>
+                <button onClick={() => { setSelectedOffer("standard"); setShowEmailModal(true); }} className="bo" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800 }}>Débloquer — 3,99€</button>
               </div>
               {/* Intégral */}
               <div className="tier-pop" style={{ background: "var(--s1)", borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column" }}>
@@ -613,12 +619,59 @@ input:focus{outline:none;border-color:#ccc!important;background:#fff!important}
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--t2)" }}>{IC.check({ s: 14, c: "var(--gold)" })}{f.t}</div>
                   ))}
                 </div>
-                <a href="https://buy.stripe.com/00w28scZj2Hreq09q54Vy1G" target="_blank" rel="noopener noreferrer" style={{ width: "100%", textDecoration: "none" }}><button className="bg" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer — 9,99€</button></a>
+                <button onClick={() => { setSelectedOffer("integral"); setShowEmailModal(true); }} className="bg" style={{ width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.download({ s: 16 })} Débloquer — 9,99€</button>
               </div>
             </div>
 
             <p style={{ textAlign: "center", fontSize: 10, color: "var(--t3)", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.shield({ s: 11, c: "var(--t3)" })} Paiement sécurisé Stripe · Libellé discret sur relevé · Remboursement si erreur</p>
             <button onClick={() => { setScreen("HOME"); setAppStatus(["wait", "wait", "wait"]); setScanLogs([]); setScanPct(0); }} style={{ display: "block", width: "100%", textAlign: "center", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--t3)", background: "none", border: "none", cursor: "pointer", padding: 14, textDecoration: "underline", textUnderlineOffset: 4 }}>Nouvelle vérification</button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════ EMAIL MODAL ══════════════ */}
+      {showEmailModal && (
+        <div onClick={() => setShowEmailModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} className="fu" style={{ background: "var(--s1)", border: "1px solid var(--bd2)", borderRadius: 24, padding: "36px 32px", maxWidth: 420, width: "100%", position: "relative" }}>
+            <button onClick={() => setShowEmailModal(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "var(--t3)", padding: 4 }}>{IC.x({ s: 18 })}</button>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: selectedOffer === "integral" ? "rgba(245,158,11,.08)" : "rgba(255,255,255,.04)", border: `1px solid ${selectedOffer === "integral" ? "rgba(245,158,11,.15)" : "var(--bd)"}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                {IC.mail({ s: 22, c: selectedOffer === "integral" ? "var(--gold)" : "var(--t2)" })}
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>Où envoyer votre rapport ?</h3>
+              <p style={{ fontSize: 12, color: "var(--t3)", lineHeight: 1.5 }}>Votre rapport {selectedOffer === "integral" ? "Intégral" : "Standard"} sera envoyé à cette adresse après le paiement.</p>
+            </div>
+            <div style={{ position: "relative", marginBottom: 16 }}>
+              <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--t3)" }}>{IC.mail({ s: 16 })}</div>
+              <input
+                value={clientEmail}
+                onChange={e => setClientEmail(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleEmailSubmit(); }}
+                placeholder="votre@email.com"
+                type="email"
+                autoFocus
+                style={{ width: "100%", padding: "16px 16px 16px 44px", borderRadius: 12, border: `2px solid ${clientEmail && !isValidEmail(clientEmail) ? "rgba(220,38,38,.4)" : "var(--bd2)"}`, fontSize: 15, fontWeight: 600, background: "var(--s2)", color: "#fff", transition: "all .2s", outline: "none" }}
+              />
+            </div>
+            <button
+              onClick={handleEmailSubmit}
+              disabled={!isValidEmail(clientEmail)}
+              className={isValidEmail(clientEmail) ? (selectedOffer === "integral" ? "bg" : "bp") : ""}
+              style={{
+                width: "100%", padding: "16px", borderRadius: 12, fontSize: 15, fontWeight: 800,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                opacity: isValidEmail(clientEmail) ? 1 : .4,
+                cursor: isValidEmail(clientEmail) ? "pointer" : "not-allowed",
+                background: !isValidEmail(clientEmail) ? "var(--s3)" : undefined,
+                color: !isValidEmail(clientEmail) ? "var(--t3)" : undefined,
+                border: !isValidEmail(clientEmail) ? "1px solid var(--bd)" : undefined,
+              }}
+            >
+              {IC.lock({ s: 16 })} Continuer vers le paiement — {selectedOffer === "integral" ? "9,99€" : "3,99€"}
+            </button>
+            <p style={{ textAlign: "center", fontSize: 10, color: "var(--t4)", marginTop: 14, lineHeight: 1.5 }}>
+              {IC.shield({ s: 10, c: "var(--t4)" })} Votre email est utilisé uniquement pour l&apos;envoi du rapport. Aucun spam, aucune revente.
+            </p>
           </div>
         </div>
       )}
