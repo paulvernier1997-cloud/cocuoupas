@@ -2,13 +2,28 @@ import React from "react";
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 min-h-screen bg-black text-white">
-      <nav className="mb-10">
-        <a href="/" className="text-sm text-zinc-500 hover:text-red-500 transition-colors italic uppercase tracking-widest">
-          ← Retour à l'outil
-        </a>
-      </nav>
-      {children}
+    <div style={{ minHeight: "100vh", background: "#09090b", color: "#fff" }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "3rem 4rem" }}>
+        <nav style={{ marginBottom: "2.5rem" }}>
+          <a
+            href="/"
+            style={{
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.15em",
+              color: "#52525b",
+              textDecoration: "none",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#ef4444")}
+            onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#52525b")}
+          >
+            ← Retour à l'outil
+          </a>
+        </nav>
+        {children}
+      </div>
     </div>
   );
 }
