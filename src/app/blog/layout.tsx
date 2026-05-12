@@ -1,9 +1,11 @@
+"use client";
+
 import React from "react";
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ minHeight: "100vh", background: "#09090b", color: "#fff" }}>
-      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "3rem 4rem" }}>
+      <div style={{ width: "100%", padding: "3rem 4rem" }}>
         <nav style={{ marginBottom: "2.5rem" }}>
           <a
             href="/"
