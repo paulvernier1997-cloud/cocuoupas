@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import React from "react";
 
 export const metadata = {
@@ -24,6 +25,18 @@ export default function ArticleHuitSignes() {
           Le doute est un poison insidieux. Avant de confronter votre partenaire sans preuves, apprenez à décrypter les signaux faibles numériques et comportementaux qui trahissent une double vie en 2026.
         </p>
       </header>
+
+      {/* IMAGE HERO */}
+      <div className="mb-12 rounded-2xl overflow-hidden">
+        <Image
+          src="/blog-smartphone.png"
+          alt="Smartphone posé face contre table — signal d'alarme de l'infidélité"
+          width={1200}
+          height={675}
+          className="w-full object-cover"
+          priority
+        />
+      </div>
 
       {/* INTRODUCTION */}
       <div className="prose prose-invert max-w-none mb-16 text-lg text-zinc-300 leading-relaxed">
@@ -112,11 +125,20 @@ export default function ArticleHuitSignes() {
         <section className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-8 md:p-10 hover:border-zinc-700 transition-colors">
           <div className="flex items-start gap-6">
             <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-500 to-red-800">06</span>
-            <div>
+            <div className="w-full">
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">La distance émotionnelle et physique</h2>
-              <p className="text-lg leading-relaxed mb-4">
+              <p className="text-lg leading-relaxed mb-6">
                 L'intimité devient inexistante ou mécanique. Plus subtil encore : la distance émotionnelle. Votre partenaire ne s'intéresse plus à vos journées, ne pose plus de questions, et les conversations se limitent à la logistique du foyer. Son "énergie émotionnelle" est investie ailleurs.
               </p>
+              <div className="rounded-xl overflow-hidden">
+                <Image
+                  src="/blog-couple.png"
+                  alt="Couple en silence sur un canapé — distance émotionnelle dans le couple"
+                  width={900}
+                  height={506}
+                  className="w-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -125,11 +147,20 @@ export default function ArticleHuitSignes() {
         <section className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-8 md:p-10 hover:border-zinc-700 transition-colors">
           <div className="flex items-start gap-6">
             <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-500 to-red-800">07</span>
-            <div>
+            <div className="w-full">
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">L'utilisation d'applications suspectes</h2>
-              <p className="text-lg leading-relaxed mb-4">
+              <p className="text-lg leading-relaxed mb-6">
                 Vous apercevez l'icône de Telegram, Signal ou d'un autre outil de messagerie cryptée qu'il/elle n'utilisait jamais avant. Pire encore, certaines personnes utilisent des "dossiers sécurisés" cachés dans leur téléphone, ou désinstallent/réinstallent Tinder avant et après être rentrés à la maison.
               </p>
+              <div className="rounded-xl overflow-hidden">
+                <Image
+                  src="/blog-phone-secret.png"
+                  alt="Personne tapant secrètement sur son téléphone la nuit — applications suspectes"
+                  width={900}
+                  height={506}
+                  className="w-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </section>
