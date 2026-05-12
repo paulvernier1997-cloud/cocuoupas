@@ -1,10 +1,6 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Guides d'Applications | Blog CocuOuPas",
-  description: "Guides complets sur le fonctionnement de Tinder, Bumble, Hinge et les autres apps de rencontre.",
-};
+import Link from "next/link";
 
 const ACCENT = "#a855f7";
 

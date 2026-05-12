@@ -1,11 +1,6 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Technique & OSINT | Blog CocuOuPas",
-  description:
-    "Méthodes numériques, OSINT et outils pour retrouver un profil sur les applications de rencontre anonymement.",
-};
+import Link from "next/link";
 
 const ACCENT = "#ef4444";
 

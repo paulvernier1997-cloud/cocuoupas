@@ -1,10 +1,6 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Psychologie & Couple | Blog CocuOuPas",
-  description: "Les mécanismes de la tromperie, les signaux d'alerte et la psychologie du couple.",
-};
+import Link from "next/link";
 
 const ACCENT = "#f97316";
 

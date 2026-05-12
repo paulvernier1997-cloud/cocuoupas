@@ -1,11 +1,6 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Blog | CocuOuPas — Conseils, guides et psychologie de couple",
-  description:
-    "Explorez nos articles sur la fidélité, les signaux d'alerte, la psychologie du couple et les guides pratiques.",
-};
+import Link from "next/link";
 
 const categories = [
   {
