@@ -234,7 +234,7 @@ export default function ArticleHuitSignesSEO() {
       <div className="mt-16 p-6 bg-zinc-900/20 border border-zinc-800/50 rounded-xl">
         <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 mb-4">Articles liés</p>
         <div className="flex flex-col gap-3">
-          <Link href="/blog/guides/guide-complet-tinder-2025" className="text-sm text-zinc-400 no-underline flex items-center gap-2 hover:text-white transition-colors">
+          <Link href="/blog/guides/guide-complet-tinder-2026" className="text-sm text-zinc-400 no-underline flex items-center gap-2 hover:text-white transition-colors">
             <span className="text-purple-500">→</span> Guide complet Tinder 2025 : fonctionnement, algorithme et profils
           </Link>
           <Link href="/blog/guides/profil-inactif-vs-actif-rencontre" className="text-sm text-zinc-400 no-underline flex items-center gap-2 hover:text-white transition-colors">
