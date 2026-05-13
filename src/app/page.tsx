@@ -437,6 +437,54 @@ input:focus{outline:none}input:not([type="email"]):focus{border-color:#ccc!impor
             </div>
           </section>
 
+          {/* ════ BLOG ENCART ════ */}
+          <section style={{ padding: "0 20px 84px", maxWidth: 1060, margin: "0 auto" }}>
+            <div style={{ borderRadius: 28, overflow: "hidden", border: "1px solid rgba(255,255,255,.06)", display: "grid", gridTemplateColumns: "1fr 1fr", position: "relative", background: "var(--s1)" }}>
+              {/* Image side */}
+              <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
+                <img
+                  src="/blog-hero-tinder-ring.png"
+                  alt="Alliance et Tinder — infidélité numérique"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "brightness(0.75)" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 60%, var(--s1))" }} />
+              </div>
+              {/* Content side */}
+              <div style={{ padding: "48px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".14em", color: "var(--red)", marginBottom: 14 }}>Blog & Analyses</p>
+                <h2 style={{ fontSize: "clamp(20px,2.8vw,32px)", fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.15, marginBottom: 16 }}>
+                  Comment détecter une double vie ?
+                </h2>
+                <p style={{ fontSize: 13, color: "var(--t3)", lineHeight: 1.7, marginBottom: 28, maxWidth: 340 }}>
+                  Nos experts analysent les signaux comportementaux et numériques qui trahissent une infidélité. Guides pratiques, psychologie de couple et techniques OSINT.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+                  {[
+                    { label: "8 signes infaillibles que votre partenaire vous trompe", href: "/blog/guides/8-signes-partenaire-trompe", color: "#a855f7" },
+                    { label: "Guide complet Tinder 2025 : fonctionnement et algorithme", href: "/blog/guides/guide-complet-tinder-2025", color: "#a855f7" },
+                    { label: "Gaslighting et manipulation : comment les reconnaître", href: "/blog/psychologie/gaslighting-manipulation-couple", color: "#f97316" },
+                  ].map((item, i) => (
+                    <a key={i} href={item.href} style={{ display: "flex", alignItems: "flex-start", gap: 8, textDecoration: "none", fontSize: 12, color: "var(--t2)", lineHeight: 1.5, transition: "color .15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.55)")}
+                    >
+                      <span style={{ color: item.color, marginTop: 1, flexShrink: 0 }}>→</span>
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+                <a
+                  href="/blog"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 22px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", fontSize: 12, fontWeight: 700, color: "var(--t1)", textDecoration: "none", textTransform: "uppercase", letterSpacing: ".06em", width: "fit-content", transition: "all .15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,.09)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,.14)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,.05)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,.08)"; }}
+                >
+                  Voir tous les articles →
+                </a>
+              </div>
+            </div>
+          </section>
+
           {/* ════ FOOTER ════ */}
           <footer style={{ borderTop: "1px solid var(--bd)", padding: "44px 20px 28px", maxWidth: 1060, margin: "0 auto" }}>
             <div className="mob-footer-cols" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 28, marginBottom: 32 }}>
