@@ -461,7 +461,7 @@ input:focus{outline:none}input:not([type="email"]):focus{border-color:#ccc!impor
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
                   {[
                     { label: "8 signes infaillibles que votre partenaire vous trompe", href: "/blog/guides/8-signes-partenaire-trompe", color: "#a855f7" },
-                    { label: "Guide complet Tinder 2025 : fonctionnement et algorithme", href: "/blog/guides/guide-complet-tinder-2025", color: "#a855f7" },
+                    { label: "Guide complet Tinder 2026 : fonctionnement et algorithme", href: "/blog/guides/guide-complet-tinder-2026", color: "#a855f7" },
                     { label: "Gaslighting et manipulation : comment les reconnaître", href: "/blog/psychologie/gaslighting-manipulation-couple", color: "#f97316" },
                   ].map((item, i) => (
                     <a key={i} href={item.href} style={{ display: "flex", alignItems: "flex-start", gap: 8, textDecoration: "none", fontSize: 12, color: "var(--t2)", lineHeight: 1.5, transition: "color .15s" }}
